@@ -155,3 +155,28 @@ Beberapa browser/jaringan memblokir tile peta dari server publik karena kebijaka
 4. Tunggu 1-2 menit untuk build pertama, lalu akses link yang diberikan GitHub.
 
 Jika halaman masih tampil tanpa styling setelah `.nojekyll` ditambahkan, coba hard refresh (Ctrl+Shift+R) untuk membersihkan cache browser, atau cek tab Actions di repo untuk memastikan proses deploy Pages selesai tanpa error.
+
+---
+
+## Fitur Baru: 3-Tab Workflow
+
+Aplikasi sekarang punya 3 tab dengan tujuan berbeda:
+
+### Tab 1 — Overlay PNG (fitur asli)
+Generate watermark PNG transparan dari CSV, seperti sebelumnya.
+
+### Tab 2 — Tempel ke Foto
+Alih-alih PNG transparan terpisah, overlay langsung "dibakar" ke foto asli kamu. Upload foto (banyak sekaligus / satu folder), foto dipasangkan otomatis dengan baris CSV (dari Tab 1) berdasarkan nama file atau urutan. Ada opsi:
+- **Acak koordinat** dalam radius tertentu (1–50 meter) — supaya titik tidak persis sama di setiap foto
+- **Tulis GPS+tanggal ke EXIF** foto JPG hasil (opsional, bisa dimatikan)
+- **Bersihkan metadata lain** — hasil jadi file bersih hanya berisi GPS+tanggal yang kamu tentukan
+- Format output JPG (kompres, EXIF didukung) atau PNG (kualitas penuh, tanpa EXIF)
+
+### Tab 3 — Geotag Metadata
+Hanya menulis GPS+tanggal ke metadata EXIF foto JPG — **tanpa** overlay/watermark visual apa pun. Untuk foto dokumentasi asli yang GPS-nya tidak terekam kamera. Sumber koordinat bisa manual (satu titik untuk semua foto) atau dari CSV Tab 1 (per foto berurutan). Sama seperti Tab 2, ada opsi acak koordinat dan bersihkan metadata lain.
+
+**Catatan teknis EXIF:** hanya file JPG yang mendukung EXIF (standar industri). PNG tidak punya slot EXIF yang sama, jadi Tab 3 hanya menerima JPG.
+
+## Traktir Kopi
+
+Ada tombol "☕ Traktir Kopi" di footer — kalau tool ini bermanfaat, bisa scan QRIS yang muncul di situ. Sepenuhnya opsional.

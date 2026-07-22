@@ -13,15 +13,22 @@
   <!-- ============ HEADER ============ -->
   <header class="app-header">
     <div class="brand">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8z" stroke="currentColor" stroke-width="1.6"/>
-          <circle cx="12" cy="10" r="2.6" stroke="currentColor" stroke-width="1.6"/>
+      <div class="brand-mark brand-mark-logo">
+        <svg viewBox="0 0 40 40" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="tlg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#22d3a0"/>
+              <stop offset="1" stop-color="#0ea5e9"/>
+            </linearGradient>
+          </defs>
+          <path d="M20 3C13 3 7.5 8.4 7.5 15.2 7.5 24 20 37 20 37s12.5-13 12.5-21.8C32.5 8.4 27 3 20 3z" fill="url(#tlg)"/>
+          <circle cx="20" cy="15" r="5.4" fill="#0b1220"/>
+          <circle cx="20" cy="15" r="2.1" fill="#22d3a0"/>
         </svg>
       </div>
       <div>
-        <h1>Overlay Generator</h1>
-        <p class="brand-sub">GPS Map Camera-style watermark · 100% offline · client-side only</p>
+        <h1>GeoStamp Studio</h1>
+        <p class="brand-sub">Internal tool · GPS overlay · photo geotagging · 100% client-side</p>
       </div>
     </div>
     <button class="btn btn-ghost" id="themeToggle" type="button" aria-label="Toggle theme">
@@ -33,6 +40,15 @@
     </button>
   </header>
 
+  <!-- ============ TAB NAV ============ -->
+  <nav class="tabnav" role="tablist">
+    <button class="tab-btn active" data-tab="tab-overlay" role="tab">1 · Overlay PNG</button>
+    <button class="tab-btn" data-tab="tab-attach" role="tab">2 · Tempel ke Foto</button>
+    <button class="tab-btn" data-tab="tab-geotag" role="tab">3 · Geotag Metadata</button>
+  </nav>
+
+  <!-- ============ TAB 1 : OVERLAY PNG (existing feature) ============ -->
+  <div id="tab-overlay" class="tab-panel active">
   <div class="layout">
 
     <!-- ============ LEFT COLUMN : INPUTS ============ -->
@@ -279,21 +295,246 @@
 
     </div>
   </div>
+  </div><!-- /tab-overlay -->
+
+  <!-- ============ TAB 2 : ATTACH OVERLAY TO PHOTO ============ -->
+  <div id="tab-attach" class="tab-panel">
+    <div class="layout">
+      <div class="col col-left">
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">A</span>
+            <h2>Upload Foto</h2>
+          </div>
+          <div id="attachDropZone" class="dropzone">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p><strong>Drag &amp; drop foto</strong> (bisa banyak / satu folder), atau klik untuk memilih</p>
+            <input type="file" id="attachInput" accept="image/jpeg,image/jpg,image/png" multiple hidden>
+          </div>
+          <div id="attachFileInfo" class="file-info hidden"></div>
+          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris CSV (dari tab 1) berdasarkan urutan, atau berdasarkan nama file jika cocok.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">B</span>
+            <h2>Pencocokan Data</h2>
+          </div>
+          <div class="field">
+            <label for="attachMatchMode">Cara pasangkan foto dengan data CSV</label>
+            <select id="attachMatchMode">
+              <option value="filename">Berdasarkan nama file (foto ↔ kolom Nama File)</option>
+              <option value="order">Berdasarkan urutan (foto ke-1 ↔ baris ke-1, dst)</option>
+            </select>
+          </div>
+          <p class="hint">Data CSV, logo, dan semua pengaturan overlay diambil dari <strong>Tab 1</strong>. Atur tampilan overlay di sana dulu, lalu kembali ke sini untuk menempelkannya ke foto.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">C</span>
+            <h2>Opsi Koordinat &amp; Metadata</h2>
+          </div>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="attachScatter">
+              <span>Acak titik koordinat dalam radius tertentu</span>
+            </label>
+          </div>
+          <div class="field" id="attachScatterRow">
+            <label for="attachScatterMeters">Radius acak <span id="attachScatterMetersVal">8 m</span></label>
+            <input type="range" id="attachScatterMeters" min="1" max="50" value="8">
+            <p class="hint">Setiap foto akan digeser secara acak 0–N meter dari titik CSV, jadi tidak semua persis di titik yang sama.</p>
+          </div>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="attachWriteExif" checked>
+              <span>Tulis juga GPS &amp; tanggal ke metadata EXIF foto (JPG saja)</span>
+            </label>
+          </div>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="attachCleanExif">
+              <span>Bersihkan metadata lain (hasil file bersih, hanya GPS + tanggal)</span>
+            </label>
+          </div>
+          <div class="field">
+            <label for="attachFormat">Format output foto</label>
+            <select id="attachFormat">
+              <option value="image/jpeg">JPG (mendukung EXIF, ukuran lebih kecil)</option>
+              <option value="image/png">PNG (tanpa EXIF, kualitas penuh)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="attachQuality">Kualitas JPG <span id="attachQualityVal">92%</span></label>
+            <input type="range" id="attachQuality" min="60" max="100" value="92">
+          </div>
+        </section>
+      </div>
+
+      <div class="col col-right">
+        <section class="card card-preview">
+          <div class="card-head"><h2>Preview</h2></div>
+          <div class="preview-stage">
+            <canvas id="attachPreviewCanvas"></canvas>
+          </div>
+          <p class="hint" id="attachPreviewHint">Upload foto dan pastikan CSV sudah dimuat di Tab 1 untuk melihat preview.</p>
+        </section>
+
+        <section class="card card-generate">
+          <div class="card-head"><h2>Proses &amp; Download</h2></div>
+          <div class="gen-stats">
+            <div class="stat"><span class="stat-num" id="attachStatPhotos">0</span><span class="stat-label">foto</span></div>
+            <div class="stat"><span class="stat-num" id="attachStatRows">0</span><span class="stat-label">baris CSV</span></div>
+          </div>
+          <button class="btn btn-primary btn-block" id="attachGenerateBtn" type="button" disabled>Tempel Overlay &amp; Download ZIP</button>
+          <div id="attachProgressWrap" class="progress-wrap hidden">
+            <div class="progress-bar"><div class="progress-bar-fill" id="attachProgressFill"></div></div>
+            <p class="progress-text" id="attachProgressText"></p>
+          </div>
+          <div id="attachDoneMsg" class="done-msg hidden"></div>
+        </section>
+      </div>
+    </div>
+  </div><!-- /tab-attach -->
+
+  <!-- ============ TAB 3 : GEOTAG METADATA ONLY ============ -->
+  <div id="tab-geotag" class="tab-panel">
+    <div class="layout">
+      <div class="col col-left">
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">A</span>
+            <h2>Upload Foto (JPG)</h2>
+          </div>
+          <div id="geotagDropZone" class="dropzone">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p><strong>Drag &amp; drop foto JPG</strong> yang ingin ditambahkan GPS + tanggal</p>
+            <input type="file" id="geotagInput" accept="image/jpeg,image/jpg" multiple hidden>
+          </div>
+          <div id="geotagFileInfo" class="file-info hidden"></div>
+          <p class="hint">Fitur ini <strong>hanya menulis metadata</strong> (GPS + tanggal/waktu) ke dalam file foto asli — tidak menambahkan watermark/overlay apa pun. Cocok untuk foto inspeksi yang GPS-nya tidak terekam kamera.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">B</span>
+            <h2>Sumber Koordinat</h2>
+          </div>
+          <div class="field">
+            <label for="geotagSource">Ambil koordinat &amp; tanggal dari</label>
+            <select id="geotagSource">
+              <option value="manual">Input manual (satu nilai untuk semua foto)</option>
+              <option value="csv">Data CSV dari Tab 1 (per foto, berdasarkan urutan)</option>
+            </select>
+          </div>
+          <div id="geotagManualFields">
+            <div class="field-row">
+              <div class="field">
+                <label for="geotagLat">Latitude</label>
+                <input type="text" id="geotagLat" placeholder="-0.664651">
+              </div>
+              <div class="field">
+                <label for="geotagLng">Longitude</label>
+                <input type="text" id="geotagLng" placeholder="117.264083">
+              </div>
+            </div>
+            <div class="field">
+              <label for="geotagDateTime">Tanggal &amp; waktu pengambilan</label>
+              <input type="datetime-local" id="geotagDateTime">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">C</span>
+            <h2>Opsi</h2>
+          </div>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="geotagScatter">
+              <span>Acak titik koordinat dalam radius tertentu</span>
+            </label>
+          </div>
+          <div class="field" id="geotagScatterRow">
+            <label for="geotagScatterMeters">Radius acak <span id="geotagScatterMetersVal">8 m</span></label>
+            <input type="range" id="geotagScatterMeters" min="1" max="50" value="8">
+          </div>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="geotagClean" checked>
+              <span>Bersihkan metadata lain (hasil file bersih, hanya GPS + tanggal)</span>
+            </label>
+          </div>
+          <p class="hint">Dengan opsi bersih aktif, semua metadata lama (merek kamera, software, dsb) dihapus — file hasil hanya berisi GPS + tanggal yang kamu tentukan.</p>
+        </section>
+      </div>
+
+      <div class="col col-right">
+        <section class="card card-generate">
+          <div class="card-head"><h2>Proses &amp; Download</h2></div>
+          <div class="gen-stats">
+            <div class="stat"><span class="stat-num" id="geotagStatPhotos">0</span><span class="stat-label">foto JPG</span></div>
+          </div>
+          <button class="btn btn-primary btn-block" id="geotagGenerateBtn" type="button" disabled>Tulis Metadata &amp; Download ZIP</button>
+          <div id="geotagProgressWrap" class="progress-wrap hidden">
+            <div class="progress-bar"><div class="progress-bar-fill" id="geotagProgressFill"></div></div>
+            <p class="progress-text" id="geotagProgressText"></p>
+          </div>
+          <div id="geotagDoneMsg" class="done-msg hidden"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Cara Verifikasi</h2></div>
+          <p class="hint">Setelah download, kamu bisa cek metadata GPS-nya dengan klik-kanan foto → Properties → Details (Windows), atau upload ke situs pengecek EXIF. Koordinat &amp; tanggal yang kamu set akan muncul di sana.</p>
+        </section>
+      </div>
+    </div>
+  </div><!-- /tab-geotag -->
 
   <footer class="app-footer">
+    <div class="footer-credit">
+      <p class="footer-made">Dibuat oleh <strong>Muhammad Afifani Romadhan</strong> ·
+        <a href="https://muhammad-afifani.github.io/Portofolio/" target="_blank" rel="noopener">Portofolio</a>
+      </p>
+      <button class="btn btn-ghost btn-coffee" id="coffeeBtn" type="button">☕ Traktir Kopi (QRIS)</button>
+    </div>
     <p>Berjalan sepenuhnya di browser Anda — tidak ada data yang diunggah ke server manapun.</p>
     <p id="mapAttribution" class="hidden">Peta: © Esri, HERE, Garmin, USGS, OpenStreetMap contributors / Esri, Maxar, Earthstar Geographics — tile diambil langsung dari server publik saat generate (butuh koneksi internet).</p>
   </footer>
+
+  <!-- coffee / QRIS modal -->
+  <div id="coffeeModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="coffeeClose" type="button" aria-label="Tutup">×</button>
+      <h3>Traktir Kopi ☕</h3>
+      <p class="hint">Kalau tool ini bermanfaat buat kerjaan kamu, boleh traktir kopi lewat QRIS di bawah. Terima kasih!</p>
+      <img id="coffeeQris" alt="QRIS Muhammad Afifani Romadhan" src="https://lh3.googleusercontent.com/d/133Ct_k-ql0PXklNLgQeWGLswIajbxKtg">
+      <p class="footer-made" style="margin-top:12px;">Muhammad Afifani Romadhan</p>
+    </div>
+  </div>
 </div>
 
 <script src="libs/papaparse.min.js"></script>
 <script src="libs/jszip.min.js"></script>
 <script src="libs/FileSaver.min.js"></script>
+<script src="libs/piexif.min.js"></script>
 <script src="js/dms.js"></script>
 <script src="js/maptile.js"></script>
 <script src="js/render.js"></script>
 <script src="js/csv.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/exifgeo.js"></script>
 <script src="js/main.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/attach.js"></script>
+<script src="js/geotag.js"></script>
 </body>
 </html>
