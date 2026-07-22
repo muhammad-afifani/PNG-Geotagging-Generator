@@ -19,6 +19,10 @@
     scatterMeters: document.getElementById('geotagScatterMeters'),
     scatterMetersVal: document.getElementById('geotagScatterMetersVal'),
     clean: document.getElementById('geotagClean'),
+    altitude: document.getElementById('geotagAltitude'),
+    description: document.getElementById('geotagDescription'),
+    artist: document.getElementById('geotagArtist'),
+    copyright: document.getElementById('geotagCopyright'),
     statPhotos: document.getElementById('geotagStatPhotos'),
     generateBtn: document.getElementById('geotagGenerateBtn'),
     progressWrap: document.getElementById('geotagProgressWrap'),
@@ -120,8 +124,13 @@
         }
 
         try {
+          const altitudeVal = el.altitude.value.trim() !== '' ? parseFloat(el.altitude.value) : undefined;
           const res = await writeGeotagToJpeg(photo, {
-            lat, lng, date: dateObj, stripOthers: el.clean.checked
+            lat, lng, date: dateObj, stripOthers: el.clean.checked,
+            altitude: (altitudeVal !== undefined && !isNaN(altitudeVal)) ? altitudeVal : undefined,
+            description: el.description.value.trim() || undefined,
+            artist: el.artist.value.trim() || undefined,
+            copyright: el.copyright.value.trim() || undefined
           });
           if (res.blob) {
             let base = (window.GeoStamp ? window.GeoStamp.sanitizeFilename(photo.name.replace(/\.[^.]+$/, '')) : photo.name.replace(/\.[^.]+$/, ''));

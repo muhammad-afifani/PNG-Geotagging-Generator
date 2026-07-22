@@ -22,11 +22,13 @@ Aplikasi web 100% client-side (tanpa backend, tanpa server, tanpa Node/PHP/Pytho
 
 ## Alur Penggunaan
 
-1. **Upload CSV** — drag & drop atau klik untuk memilih file.
+1. **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Upload CSV, isi datamu mengikuti format itu, lalu upload.
 2. **(Opsional) Upload logo** — Mode A pakai logo bawaan (embedded), Mode B upload PNG sendiri.
 3. **Atur pengaturan overlay** — resolusi, format tanggal, posisi, opacity, warna & ukuran font, sumber peta, dll.
 4. **Preview** — cek tampilan overlay per baris sebelum generate massal.
 5. **Generate & Download ZIP** — semua PNG dibuat secara batch/asynchronous lalu otomatis di-download sebagai satu file ZIP.
+
+> **Penting:** CSV, logo, dan semua pengaturan overlay yang kamu atur di **Tab 1** dipakai bersama oleh **Tab 2 (Tempel ke Foto)** dan **Tab 3 (Geotag Metadata)** — tidak perlu upload ulang CSV di tab lain. Urutan ini (dan alasan tool ini dibuat) juga dijelaskan di banner panduan yang muncul otomatis di bagian atas halaman saat pertama kali dibuka (bisa ditutup/dibuka lagi lewat tombol "📖 Panduan" di header).
 
 ---
 
@@ -176,6 +178,23 @@ Alih-alih PNG transparan terpisah, overlay langsung "dibakar" ke foto asli kamu.
 Hanya menulis GPS+tanggal ke metadata EXIF foto JPG — **tanpa** overlay/watermark visual apa pun. Untuk foto dokumentasi asli yang GPS-nya tidak terekam kamera. Sumber koordinat bisa manual (satu titik untuk semua foto) atau dari CSV Tab 1 (per foto berurutan). Sama seperti Tab 2, ada opsi acak koordinat dan bersihkan metadata lain.
 
 **Catatan teknis EXIF:** hanya file JPG yang mendukung EXIF (standar industri). PNG tidak punya slot EXIF yang sama, jadi Tab 3 hanya menerima JPG.
+
+### Metadata Tambahan (opsional) — Tab 3
+
+Selain GPS + tanggal/waktu, Tab 3 sekarang punya field opsional yang juga ditulis ke EXIF setiap foto dalam satu batch (nilai sama untuk semua foto pada proses tersebut) — berguna untuk kelengkapan dokumentasi kepatuhan seperti **SIMPEL PPU**:
+
+| Field | Ditulis ke tag EXIF |
+|---|---|
+| Ketinggian / Altitude (meter) | `GPS.GPSAltitude` + `GPSAltitudeRef` |
+| Keterangan Foto | `0th.ImageDescription` |
+| Nama Petugas / Surveyor | `0th.Artist` |
+| Instansi / Perusahaan | `0th.Copyright` |
+
+Semua field ini opsional — dikosongkan berarti tidak ditulis. Verifikasi hasilnya sama seperti GPS: klik-kanan foto → Properties → Details (Windows), atau lewat situs pengecek EXIF.
+
+## Kenapa Tool Ini Dibuat
+
+Di beberapa lokasi kerja **restricted** (misalnya area proses/plant pada fasilitas migas atau industri sejenis), kamera/perangkat yang boleh dibawa masuk umumnya tidak diizinkan mengaktifkan fitur GPS/geotag karena kebijakan keamanan lokasi. Akibatnya, foto dokumentasi yang dihasilkan tidak memiliki informasi lokasi sama sekali. Tool ini dibuat untuk menambahkan koordinat, tanggal, dan info lokasi tersebut **secara manual** ke overlay PNG maupun langsung ke metadata EXIF foto, agar dokumentasi tetap bisa memenuhi ketentuan teknis pelaporan seperti **SIMPEL PPU** yang mensyaratkan bukti geotag pada foto pekerjaan.
 
 ## Traktir Kopi
 
