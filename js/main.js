@@ -723,7 +723,7 @@
     if (renderFailCount > 0) {
       extraMsg += ` ${renderFailCount} baris mengalami masalah saat render/encode.`;
     }
-    el.doneMsg.innerHTML = `✔ Selesai! ZIP berisi <strong>${total}</strong> file PNG telah diunduh.${extraMsg ? '<br><span style="color:var(--text-dim);font-size:11.5px;">' + extraMsg.trim() + '</span>' : ''}`;
+    el.doneMsg.innerHTML = `Selesai! ZIP berisi <strong>${total}</strong> file PNG telah diunduh.${extraMsg ? '<br><span style="color:var(--text-dim);font-size:11.5px;">' + extraMsg.trim() + '</span>' : ''}`;
   }
 
   function updateProgress(done, total, etaMs) {

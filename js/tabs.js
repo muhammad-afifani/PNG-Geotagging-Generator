@@ -38,23 +38,26 @@
     }
   });
 
-  // --- guide / onboarding banner ---
-  const GUIDE_KEY = 'geostamp_guide_dismissed';
+  // --- guide / onboarding banner: single toggle, collapsed state persists ---
+  const GUIDE_KEY = 'geostamp_guide_collapsed';
   const guideBanner = document.getElementById('guideBanner');
-  const guideCloseBtn = document.getElementById('guideCloseBtn');
-  const guideReopenBtn = document.getElementById('guideReopenBtn');
+  const guideToggleBtn = document.getElementById('guideToggleBtn');
 
-  function setGuideVisible(visible) {
+  function setGuideCollapsed(collapsed) {
     if (!guideBanner) return;
-    guideBanner.classList.toggle('hidden', !visible);
-    try { localStorage.setItem(GUIDE_KEY, visible ? '0' : '1'); } catch (e) { /* ignore */ }
+    guideBanner.classList.toggle('collapsed', collapsed);
+    if (guideToggleBtn) guideToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+    try { localStorage.setItem(GUIDE_KEY, collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
   }
 
   if (guideBanner) {
-    let dismissed = false;
-    try { dismissed = localStorage.getItem(GUIDE_KEY) === '1'; } catch (e) { /* ignore */ }
-    setGuideVisible(!dismissed);
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(GUIDE_KEY) === '1'; } catch (e) { /* ignore */ }
+    setGuideCollapsed(collapsed);
   }
-  if (guideCloseBtn) guideCloseBtn.addEventListener('click', () => setGuideVisible(false));
-  if (guideReopenBtn) guideReopenBtn.addEventListener('click', () => setGuideVisible(true));
+  if (guideToggleBtn) {
+    guideToggleBtn.addEventListener('click', () => {
+      setGuideCollapsed(!guideBanner.classList.contains('collapsed'));
+    });
+  }
 })();

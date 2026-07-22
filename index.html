@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GPS Map Camera — Overlay Generator</title>
+<link rel="icon" type="image/png" href="assets/logo-icon.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,53 +15,49 @@
   <header class="app-header">
     <div class="brand">
       <div class="brand-mark brand-mark-logo">
-        <svg viewBox="0 0 40 40" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="tlg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#22d3a0"/>
-              <stop offset="1" stop-color="#0ea5e9"/>
-            </linearGradient>
-          </defs>
-          <path d="M20 3C13 3 7.5 8.4 7.5 15.2 7.5 24 20 37 20 37s12.5-13 12.5-21.8C32.5 8.4 27 3 20 3z" fill="url(#tlg)"/>
-          <circle cx="20" cy="15" r="5.4" fill="#0b1220"/>
-          <circle cx="20" cy="15" r="2.1" fill="#22d3a0"/>
-        </svg>
+        <img src="assets/logo-icon.png" alt="GPS Map Camera">
       </div>
       <div>
         <h1>GeoStamp Studio</h1>
         <p class="brand-sub">Internal tool · GPS overlay · photo geotagging · 100% client-side</p>
       </div>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-ghost" id="guideReopenBtn" type="button">📖 Panduan</button>
-      <button class="btn btn-ghost" id="themeToggle" type="button" aria-label="Toggle theme">
-        <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/>
-        </svg>
-        <span id="themeLabel">Light</span>
-      </button>
-    </div>
+    <button class="btn btn-ghost" id="themeToggle" type="button" aria-label="Toggle theme">
+      <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <span id="themeLabel">Light</span>
+    </button>
   </header>
 
-  <!-- ============ GUIDE / ONBOARDING BANNER ============ -->
+  <!-- ============ GUIDE / ONBOARDING BANNER (collapsible) ============ -->
   <section id="guideBanner" class="guide-banner">
-    <button class="guide-close" id="guideCloseBtn" type="button" aria-label="Tutup panduan">×</button>
+    <button class="guide-toggle" id="guideToggleBtn" type="button" aria-expanded="true" aria-controls="guideBody">
+      <span class="guide-toggle-text">
+        <strong>Panduan Cara Pakai</strong>
+        <span class="guide-toggle-sub">Alur 3 tab &amp; kenapa tool ini dibuat — klik untuk buka/tutup</span>
+      </span>
+      <svg class="guide-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
 
-    <div class="guide-why">
-      <span class="guide-why-icon">ℹ️</span>
-      <p><strong>Kenapa tool ini dibuat?</strong> Kamera yang dipakai di area kerja <em>restricted</em> (mis. area proses/plant) umumnya tidak boleh membawa fitur GPS/geotag aktif karena kebijakan keamanan lokasi. Akibatnya foto dokumentasi tidak punya info lokasi. Tool ini menambahkan koordinat &amp; tanggal secara manual ke foto/PNG agar dokumentasi tetap memenuhi <strong>ketentuan teknis SIMPEL PPU</strong> (wajib ada bukti geotag).</p>
-    </div>
+    <div class="guide-body" id="guideBody">
+      <div class="guide-why">
+        <p><strong>Kenapa tool ini dibuat?</strong> Kamera yang dipakai di area kerja <em>restricted</em> (mis. area proses/plant) umumnya tidak boleh membawa fitur GPS/geotag aktif karena kebijakan keamanan lokasi. Akibatnya foto dokumentasi tidak punya info lokasi. Tool ini menambahkan koordinat &amp; tanggal secara manual ke foto/PNG agar dokumentasi tetap memenuhi <strong>ketentuan teknis SIMPEL PPU</strong> (wajib ada bukti geotag).</p>
+      </div>
 
-    <div class="guide-flow">
-      <p class="guide-flow-title">Alur pakai (baca ini dulu sebelum mulai):</p>
-      <ol class="guide-steps">
-        <li><strong>Mulai di Tab 1 — Overlay PNG.</strong> Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi) lalu atur tampilan overlay di sini. <u>CSV, logo, dan semua pengaturan yang kamu atur di Tab 1 otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload ulang.</li>
-        <li><strong>Tab 2 — Tempel ke Foto</strong> dipakai kalau kamu mau overlay langsung "dibakar" ke foto asli (upload foto di sini, datanya diambil dari CSV Tab 1).</li>
-        <li><strong>Tab 3 — Geotag Metadata</strong> dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF foto JPG, tanpa watermark terlihat.</li>
-      </ol>
-      <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload ke Tab 1.</p>
-      <a class="btn btn-secondary guide-download" href="contoh-format.csv" download="contoh-format.csv">⬇ Download Contoh CSV</a>
+      <div class="guide-flow">
+        <p class="guide-flow-title">Alur pakai (baca ini dulu sebelum mulai):</p>
+        <ol class="guide-steps">
+          <li><strong>Mulai di Tab 1 — Overlay PNG.</strong> Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi) lalu atur tampilan overlay di sini. <u>CSV, logo, dan semua pengaturan yang kamu atur di Tab 1 otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload ulang.</li>
+          <li><strong>Tab 2 — Tempel ke Foto</strong> dipakai kalau kamu mau overlay langsung "dibakar" ke foto asli (upload foto di sini, datanya diambil dari CSV Tab 1).</li>
+          <li><strong>Tab 3 — Geotag Metadata</strong> dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF foto JPG, tanpa watermark terlihat.</li>
+        </ol>
+        <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload ke Tab 1.</p>
+        <a class="btn btn-secondary guide-download" href="contoh-format.csv" download="contoh-format.csv">Download Contoh CSV</a>
+      </div>
     </div>
   </section>
 
@@ -104,7 +101,7 @@
         <div id="csvInfo" class="file-info hidden"></div>
         <div id="csvColMap" class="colmap hidden"></div>
         <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
-        <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">⬇ Download Contoh Format CSV</a>
+        <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
       </section>
 
       <!-- STEP 2 : LOGO -->
@@ -147,6 +144,8 @@
 
         <div class="settings-grid">
 
+          <div class="settings-subhead">Ukuran &amp; Tanggal</div>
+
           <div class="field">
             <label for="canvasSize">Resolusi PNG</label>
             <select id="canvasSize">
@@ -181,6 +180,8 @@
             </select>
           </div>
 
+          <div class="settings-subhead">Tampilan Overlay</div>
+
           <div class="field">
             <label for="overlayScale">Ukuran Overlay <span id="overlayScaleVal">100%</span></label>
             <input type="range" id="overlayScale" min="70" max="130" value="100">
@@ -214,6 +215,8 @@
             <input type="range" id="shadowStrength" min="0" max="100" value="35">
           </div>
 
+          <div class="settings-subhead">Logo &amp; Nama Proyek</div>
+
           <div class="field">
             <label for="badgeStyle">Gaya Logo "GPS Map Camera"</label>
             <select id="badgeStyle">
@@ -232,6 +235,8 @@
             <label for="projectNameOverride">Project Name (override semua baris)</label>
             <input type="text" id="projectNameOverride" placeholder="Kosongkan untuk pakai kolom CSV">
           </div>
+
+          <div class="settings-subhead">Peta &amp; Lokasi</div>
 
           <div class="field field-check">
             <label class="checkbox-row">
@@ -323,7 +328,7 @@
           </div>
         </div>
         <div id="doneMsg" class="done-msg hidden">
-          ✔ Selesai! ZIP berisi <strong id="doneCount">0</strong> file PNG telah diunduh.
+          Selesai! ZIP berisi <strong id="doneCount">0</strong> file PNG telah diunduh.
         </div>
       </section>
 
@@ -564,7 +569,7 @@
       <p class="footer-made">Dibuat oleh <strong>Muhammad Afifani Romadhan</strong> ·
         <a href="https://muhammad-afifani.github.io/Portofolio/" target="_blank" rel="noopener">Portofolio</a>
       </p>
-      <button class="btn btn-ghost btn-coffee" id="coffeeBtn" type="button">☕ Traktir Kopi (QRIS)</button>
+      <button class="btn btn-ghost btn-coffee" id="coffeeBtn" type="button">Traktir Kopi (QRIS)</button>
     </div>
     <p>Berjalan sepenuhnya di browser Anda — tidak ada data yang diunggah ke server manapun.</p>
     <p id="mapAttribution" class="hidden">Peta: © Esri, HERE, Garmin, USGS, OpenStreetMap contributors / Esri, Maxar, Earthstar Geographics — tile diambil langsung dari server publik saat generate (butuh koneksi internet).</p>
@@ -574,7 +579,7 @@
   <div id="coffeeModal" class="modal-overlay hidden">
     <div class="modal-box">
       <button class="modal-close" id="coffeeClose" type="button" aria-label="Tutup">×</button>
-      <h3>Traktir Kopi ☕</h3>
+      <h3>Traktir Kopi</h3>
       <p class="hint">Kalau tool ini bermanfaat buat kerjaan kamu, boleh traktir kopi lewat QRIS di bawah. Terima kasih!</p>
       <img id="coffeeQris" alt="QRIS Muhammad Afifani Romadhan" src="https://lh3.googleusercontent.com/d/133Ct_k-ql0PXklNLgQeWGLswIajbxKtg">
       <p class="footer-made" style="margin-top:12px;">Muhammad Afifani Romadhan</p>
