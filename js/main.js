@@ -748,4 +748,21 @@
     return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
   }
 
+  // ---------- shared bridge for the other tabs (attach.js, geotag.js) ----------
+  // Exposes read access to CSV rows / logo / settings and the overlay
+  // rendering pipeline, so the photo-attach and metadata tabs can reuse
+  // exactly the same data and look the user configured on tab 1.
+  window.GeoStamp = {
+    getRows: () => state.rows,
+    getLogo: () => state.logoImg,
+    getSettings: () => ({ ...state.settings }),
+    getDims: () => getCanvasDims(state.settings),
+    buildOverlayOpts: (row, dims, settings, mapImg) => buildOverlayOpts(row, dims, settings, mapImg),
+    applyProjectOverride: (row, settings) => applyProjectOverride(row, settings),
+    resolveMapForRow: (row, settings) => resolveMapForRow(row, settings),
+    renderOverlay: (canvas, row, opts) => renderOverlay(canvas, row, opts),
+    sanitizeFilename: (s) => sanitizeFilename(s),
+    timestampSlug: () => timestampSlug()
+  };
+
 })();
