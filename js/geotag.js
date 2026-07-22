@@ -162,7 +162,7 @@
 
       el.progressWrap.classList.add('hidden');
       el.doneMsg.classList.remove('hidden');
-      el.doneMsg.innerHTML = `✔ Selesai! <strong>${ok}</strong> foto JPG dengan metadata GPS+tanggal telah diunduh.`
+      el.doneMsg.innerHTML = `Selesai! <strong>${ok}</strong> foto JPG dengan metadata GPS+tanggal telah diunduh.`
         + (warn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${warn} foto dilewati (bukan JPG valid).</span>` : '');
     } catch (err) {
       console.error(err);

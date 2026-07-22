@@ -68,7 +68,8 @@ body { min-height: 100vh; }
 }
 
 @media (max-width: 560px) {
-  .guide-banner { padding: 16px 36px 16px 14px; }
+  .guide-toggle { padding: 12px 14px; }
+  .guide-body { padding: 0 14px 16px; }
 }
 
 .brand { display: flex; align-items: center; gap: 14px; }
@@ -77,12 +78,16 @@ body { min-height: 100vh; }
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: var(--accent);
-  color: var(--accent-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--border-soft);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand h1 {
@@ -98,53 +103,57 @@ body { min-height: 100vh; }
   color: var(--text-dim);
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-/* ---------- guide / onboarding banner ---------- */
+/* ---------- guide / onboarding banner (collapsible accordion) ---------- */
 .guide-banner {
-  position: relative;
   background: var(--bg-elev);
   border: 1px solid var(--accent-dim);
   border-radius: var(--radius);
-  padding: 18px 44px 20px 18px;
   margin-bottom: 18px;
   box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.guide-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 14px 18px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: inherit;
+}
+.guide-toggle:hover { background: rgba(61,220,151,0.06); }
+
+.guide-toggle-text { display: flex; flex-direction: column; gap: 2px; }
+.guide-toggle-text strong { font-size: 13.5px; }
+.guide-toggle-sub { font-size: 11.5px; color: var(--text-faint); font-weight: 400; }
+
+.guide-chevron {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: transform .18s ease;
+}
+.guide-banner.collapsed .guide-chevron { transform: rotate(-90deg); }
+
+.guide-body {
+  padding: 0 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-
-.guide-banner.hidden { display: none !important; }
-
-.guide-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px;
-}
-.guide-close:hover { color: var(--text); }
+.guide-banner.collapsed .guide-body { display: none; }
 
 .guide-why {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
   background: rgba(61,220,151,0.07);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
 }
-.guide-why-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
 .guide-why p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
 .guide-why p strong { color: var(--text); }
 
@@ -386,6 +395,19 @@ body { min-height: 100vh; }
   gap: 14px 12px;
 }
 
+.settings-subhead {
+  grid-column: 1 / -1;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-dim);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.settings-subhead:first-child { padding-top: 0; }
+.settings-subhead:not(:first-child) { margin-top: 4px; }
+
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-check { grid-column: 1 / -1; gap: 10px; }
 
@@ -597,6 +619,20 @@ body { min-height: 100vh; }
   border: 1px solid var(--accent-dim);
   color: var(--text);
   font-size: 12.5px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.done-msg::before {
+  content: '';
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%233ddc97'/%3E%3Cpath d='M7 12.5l3 3 7-7' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 /* ---------- footer ---------- */

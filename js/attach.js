@@ -272,7 +272,7 @@
 
       el.progressWrap.classList.add('hidden');
       el.doneMsg.classList.remove('hidden');
-      el.doneMsg.innerHTML = `✔ Selesai! <strong>${encoded}</strong> foto ter-overlay telah diunduh sebagai ZIP.`
+      el.doneMsg.innerHTML = `Selesai! <strong>${encoded}</strong> foto ter-overlay telah diunduh sebagai ZIP.`
         + (exifWarn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${exifWarn} foto tidak bisa ditulisi EXIF (bukan JPG).</span>` : '');
     } catch (err) {
       console.error(err);
