@@ -38,6 +38,12 @@ function _exifDateTime(date) {
  * fields (a clean file with no leftover camera/software metadata).
  * If false, the caller should merge this into the photo's existing
  * EXIF (handled in writeGeotagToJpeg).
+ *
+ * opts (all optional):
+ *   altitude    number, meters (can be negative for below sea level)
+ *   description string -> ImageDescription (0th IFD)
+ *   artist      string -> Artist / surveyor-photographer name (0th IFD)
+ *   copyright   string -> Copyright / instansi-perusahaan (0th IFD)
  */
 function buildExifObj(lat, lng, dateObj, opts) {
   opts = opts || {};
@@ -47,6 +53,11 @@ function buildExifObj(lat, lng, dateObj, opts) {
   gps[piexif.GPSIFD.GPSLatitude] = _degToDmsRational(lat);
   gps[piexif.GPSIFD.GPSLongitudeRef] = lng >= 0 ? 'E' : 'W';
   gps[piexif.GPSIFD.GPSLongitude] = _degToDmsRational(lng);
+
+  if (opts.altitude !== undefined && opts.altitude !== null && !isNaN(opts.altitude)) {
+    gps[piexif.GPSIFD.GPSAltitudeRef] = opts.altitude < 0 ? 1 : 0;
+    gps[piexif.GPSIFD.GPSAltitude] = [Math.round(Math.abs(opts.altitude) * 100), 100];
+  }
 
   const exif = {};
   const zeroth = {};
@@ -64,6 +75,10 @@ function buildExifObj(lat, lng, dateObj, opts) {
       [dateObj.getUTCSeconds(), 1]
     ];
   }
+
+  if (opts.description) zeroth[piexif.ImageIFD.ImageDescription] = String(opts.description);
+  if (opts.artist) zeroth[piexif.ImageIFD.Artist] = String(opts.artist);
+  if (opts.copyright) zeroth[piexif.ImageIFD.Copyright] = String(opts.copyright);
 
   return { '0th': zeroth, 'Exif': exif, 'GPS': gps, 'Interop': {}, '1st': {}, 'thumbnail': null };
 }
@@ -87,6 +102,10 @@ function _readFileAsBinaryString(file) {
  * options:
  *   lat, lng      (numbers, required)
  *   date          (JS Date, optional)
+ *   altitude      (number, optional, meters)
+ *   description   (string, optional) -> ImageDescription
+ *   artist        (string, optional) -> Artist (petugas/surveyor)
+ *   copyright     (string, optional) -> Copyright (instansi/perusahaan)
  *   stripOthers   (bool) — if true, remove ALL pre-existing metadata
  *                 and write only GPS + date (clean file). If false,
  *                 keep existing EXIF and only add/replace GPS + date.
@@ -106,10 +125,17 @@ async function writeGeotagToJpeg(file, options) {
   const binary = await _readFileAsBinaryString(file);
   const dataURL = 'data:image/jpeg;base64,' + btoa(binary);
 
+  const extraOpts = {
+    altitude: options.altitude,
+    description: options.description,
+    artist: options.artist,
+    copyright: options.copyright
+  };
+
   let exifObj;
   if (options.stripOthers) {
     // clean slate: only our fields
-    exifObj = buildExifObj(options.lat, options.lng, options.date || null);
+    exifObj = buildExifObj(options.lat, options.lng, options.date || null, extraOpts);
   } else {
     // merge into existing metadata
     let existing;
@@ -118,7 +144,7 @@ async function writeGeotagToJpeg(file, options) {
     } catch (e) {
       existing = { '0th': {}, 'Exif': {}, 'GPS': {}, 'Interop': {}, '1st': {}, 'thumbnail': null };
     }
-    const ours = buildExifObj(options.lat, options.lng, options.date || null);
+    const ours = buildExifObj(options.lat, options.lng, options.date || null, extraOpts);
     existing.GPS = ours.GPS;
     Object.keys(ours.Exif).forEach(k => { existing.Exif[k] = ours.Exif[k]; });
     Object.keys(ours['0th']).forEach(k => { existing['0th'][k] = ours['0th'][k]; });

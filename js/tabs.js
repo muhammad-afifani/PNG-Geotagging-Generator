@@ -37,4 +37,24 @@
       closeCoffee();
     }
   });
+
+  // --- guide / onboarding banner ---
+  const GUIDE_KEY = 'geostamp_guide_dismissed';
+  const guideBanner = document.getElementById('guideBanner');
+  const guideCloseBtn = document.getElementById('guideCloseBtn');
+  const guideReopenBtn = document.getElementById('guideReopenBtn');
+
+  function setGuideVisible(visible) {
+    if (!guideBanner) return;
+    guideBanner.classList.toggle('hidden', !visible);
+    try { localStorage.setItem(GUIDE_KEY, visible ? '0' : '1'); } catch (e) { /* ignore */ }
+  }
+
+  if (guideBanner) {
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(GUIDE_KEY) === '1'; } catch (e) { /* ignore */ }
+    setGuideVisible(!dismissed);
+  }
+  if (guideCloseBtn) guideCloseBtn.addEventListener('click', () => setGuideVisible(false));
+  if (guideReopenBtn) guideReopenBtn.addEventListener('click', () => setGuideVisible(true));
 })();
