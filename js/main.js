@@ -35,6 +35,9 @@
     gmtOffset: document.getElementById('gmtOffset'),
     showTime: document.getElementById('showTime'),
     autoGeocode: document.getElementById('autoGeocode'),
+    mapAspect: document.getElementById('mapAspect'),
+    noteOverride: document.getElementById('noteOverride'),
+    contactOverride: document.getElementById('contactOverride'),
 
     canvasSize: document.getElementById('canvasSize'),
     customSizeRow: document.getElementById('customSizeRow'),
@@ -115,6 +118,9 @@
     el.gmtOffset.value = s.gmtOffset;
     el.showTime.checked = s.showTime;
     el.autoGeocode.checked = s.autoGeocode;
+    el.mapAspect.value = s.mapAspect;
+    el.noteOverride.value = s.noteOverride || '';
+    el.contactOverride.value = s.contactOverride || '';
     updateTemplateFieldVisibility();
 
     el.canvasSize.value = s.canvasSize;
@@ -154,6 +160,9 @@
       gmtOffset: el.gmtOffset.value,
       showTime: el.showTime.checked,
       autoGeocode: el.autoGeocode.checked,
+      mapAspect: el.mapAspect.value,
+      noteOverride: el.noteOverride.value,
+      contactOverride: el.contactOverride.value,
 
       canvasSize: el.canvasSize.value,
       customW: parseInt(el.customW.value) || 1080,
@@ -216,12 +225,13 @@
     });
   });
 
-  [el.overlayTemplate, el.gmtOffset, el.showTime, el.autoGeocode].forEach(node => {
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.autoGeocode, el.mapAspect].forEach(node => {
     node.addEventListener('change', () => {
       updateTemplateFieldVisibility();
       onSettingsChanged();
     });
   });
+  [el.noteOverride, el.contactOverride].forEach(node => node.addEventListener('input', onSettingsChanged));
   [el.customW, el.customH].forEach(node => node.addEventListener('input', onSettingsChanged));
 
   el.mapZoom.addEventListener('input', () => {
@@ -340,7 +350,10 @@
   function renderColMapUI() {
     const labels = {
       file: 'Nama File', lat: 'Latitude', lng: 'Longitude',
-      date: 'Tanggal', time: 'Waktu', location: 'Lokasi', address: 'Alamat', city: 'Kota'
+      date: 'Tanggal', time: 'Waktu', location: 'Lokasi', address: 'Alamat', city: 'Kota',
+      note: 'Catatan (opsional)', phone: 'Kontak (opsional)',
+      temperature: 'Suhu (opsional)', wind: 'Angin (opsional)',
+      altitude: 'Ketinggian (opsional)', direction: 'Arah (opsional)'
     };
     const entries = Object.entries(labels).map(([field, label]) => {
       const found = state.colMap[field];
@@ -450,11 +463,20 @@
     if (settings.mapSource === 'offline') return null;
     if (isNaN(row.lat) || isNaN(row.lng)) return null;
 
+    // Template 2's map can be a non-square aspect ratio; request the
+    // thumbnail pre-cropped to that ratio (max dimension 256) so it
+    // never needs to be stretched when drawn.
+    const base = 256;
+    const ratio = settings.template === 'gpscam2' ? parseMapAspect(settings.mapAspect) : 1;
+    const w = ratio >= 1 ? base : Math.round(base * ratio);
+    const h = ratio >= 1 ? Math.round(base / ratio) : base;
+
     try {
       const result = await buildMapThumbnail(row.lat, row.lng, {
         provider: settings.mapSource,
         zoom: settings.mapZoom,
-        size: 256,
+        width: w,
+        height: h,
         timeoutMs: MAP_FETCH_TIMEOUT_MS
       });
       return result && result.canvas ? result.canvas : null;
@@ -520,13 +542,21 @@
   }
 
   /**
-   * If the user set a Project Name override, return a shallow copy of
-   * the row with location replaced; otherwise return the row as-is.
+   * Apply Tab 1's "override all rows" settings (Project Name, and for
+   * Template 2, Note/Contact) onto a row, returning a shallow copy
+   * only if at least one override is actually set — otherwise returns
+   * the row as-is so callers that don't care can skip the copy.
    */
   function applyProjectOverride(row, settings) {
-    const ov = settings.projectNameOverride && settings.projectNameOverride.trim();
-    if (!ov) return row;
-    return { ...row, location: ov };
+    const projectOv = settings.projectNameOverride && settings.projectNameOverride.trim();
+    const noteOv = settings.noteOverride && settings.noteOverride.trim();
+    const contactOv = settings.contactOverride && settings.contactOverride.trim();
+    if (!projectOv && !noteOv && !contactOv) return row;
+    const next = { ...row };
+    if (projectOv) next.location = projectOv;
+    if (noteOv) next.note = noteOv;
+    if (contactOv) next.phone = contactOv;
+    return next;
   }
 
   function buildOverlayOpts(row, dims, settings, mapCanvas, geoResult) {
@@ -551,6 +581,7 @@
       showLocation: settings.showLocation,
       gmtOffset: settings.gmtOffset,
       showTime: settings.showTime,
+      mapAspect: settings.mapAspect,
       geo: geoResult ? geoResult.geo : null,
       countryFlagImg: geoResult ? geoResult.flagImg : null
     };

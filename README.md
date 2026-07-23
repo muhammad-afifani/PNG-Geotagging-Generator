@@ -119,11 +119,19 @@ Tab 1 punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay
 Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`).
 
 ### Template 2 — GPS Map Camera
-Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari tampilan watermark asli aplikasi GPS Map Camera: bar gelap penuh dari tepi ke tepi (tanpa sudut membulat/margin), badge logo di pojok kanan-atas bar, judul tebal `Kota,Provinsi,Negara` + bendera negara, alamat lengkap, baris koordinat desimal (`Lat -0.526269, Long 117.264083`), dan baris tanggal + zona waktu (`26/04/26 GMT+08:00`).
+Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari tampilan watermark asli aplikasi GPS Map Camera. Sama seperti Template 1: kartu mengambang dengan sudut membulat dan badge logo menempel di pojok kanan-atas kotak teks (keluar/nongol di ujung, persis mekanisme Template 1) — bedanya ada baris data yang lebih lengkap:
+- Judul tebal `Kota, Provinsi, Negara` + bendera negara
+- Alamat lengkap (wrap hingga 2 baris)
+- Baris koordinat desimal: `Lat 40.689298   Long -74.044495`
+- Baris tanggal + jam (opsional) + zona waktu: `Thursday, 20/03/2025 GMT+08:00`
+- **Note** (opsional): `Note : <teks bebas>`
+- **Kontak** (opsional): nomor telepon/kontak dengan ikon telepon
+- **Info geografis** (opsional): suhu, kecepatan angin, ketinggian, dan arah/bearing — masing-masing dengan ikon sendiri (matahari, angin, gunung, kompas), tampil berjejer hanya untuk field yang ada datanya
 
 Pengaturan khusus Template 2 (muncul otomatis saat template ini dipilih):
 - **Zona Waktu (GMT Offset)** — dropdown WIB/WITA/WIT plus offset umum lainnya, ditulis di baris tanggal.
-- **Tampilkan jam di baris tanggal** — opsional, default mati (mengikuti contoh referensi yang hanya menampilkan tanggal + zona waktu tanpa jam).
+- **Rasio Peta** — 1:1 / 4:3 / 3:4 / 16:9 / 9:16. Thumbnail peta di-crop (bukan di-stretch) dari grid tile yang sama, jadi bentuknya berubah sesuai rasio tanpa gambar jadi gepeng/molor.
+- **Tampilkan jam di baris tanggal** — opsional, default mati.
 - **Deteksi otomatis lokasi & alamat dari koordinat (reverse geocoding)** — aktif secara default. Saat aktif, judul (kota/provinsi/negara + bendera) dan baris alamat **otomatis dihitung dari Latitude/Longitude tiap baris**, tidak perlu mengisi kolom Lokasi/Alamat di CSV secara manual. Prosesnya:
   - Menggunakan layanan reverse-geocoding gratis & tanpa API key dari Esri (`geocode.arcgis.com`) — vendor yang sama dengan yang sudah dipakai untuk tile peta, dipilih dengan alasan yang sama: layanan geocoding OpenStreetMap (Nominatim) secara eksplisit melarang pemakaian otomatis/massal tanpa izin, sedangkan endpoint anonim Esri tidak membawa pembatasan itu untuk pemakaian ringan seperti ini.
   - Bendera negara diambil dari `flagcdn.com` (gratis, tanpa API key).
@@ -131,8 +139,22 @@ Pengaturan khusus Template 2 (muncul otomatis saat template ini dipilih):
   - Sama seperti fetch peta: **timeout-guarded per baris** (tidak akan pernah macet) — kalau lookup gagal/timeout untuk sebagian baris, baris itu otomatis jatuh ke kolom Lokasi/Alamat dari CSV, dan jumlah baris yang fallback dilaporkan di pesan setelah selesai generate.
   - Bisa dimatikan kapan saja lewat toggle ini kalau lebih suka mengontrol teks lokasi secara manual dari CSV (misal untuk kerja offline, atau saat sudah punya data alamat yang lebih akurat daripada hasil reverse-geocoding).
   - Daftar negara yang dikenali (untuk nama + bendera) mencakup ASEAN dan negara-negara umum lainnya; kode negara yang tidak dikenali tetap tampil (tanpa bendera) alih-alih gagal.
+- **Catatan / Note** dan **Nomor Kontak** (override semua baris) — ketik sekali untuk dipakai di semua baris, sama seperti pola "Project Name". Kosongkan untuk memakai kolom CSV per baris.
 
-Toggle **"Tampilkan thumbnail peta"** yang sudah ada di Template 1 berlaku juga untuk Template 2 — saat dimatikan, bar teks memakai lebar penuh persis seperti contoh referensi; saat dinyalakan, peta kotak kecil disisipkan di sisi kiri bar.
+Toggle **"Tampilkan thumbnail peta"** yang sudah ada di Template 1 berlaku juga untuk Template 2.
+
+**Kolom CSV tambahan (semua opsional)** untuk Template 2 — hanya tampil kalau ada isinya, tidak wajib diisi:
+
+| Field internal | Alias header yang dikenali |
+|---|---|
+| Catatan | `Catatan`, `Note`, `Keterangan` |
+| Kontak | `Telepon`, `Phone`, `Kontak`, `Nomor Kontak`, `No Telp`, `No HP` |
+| Suhu | `Suhu`, `Temperature`, `Temp` |
+| Angin | `Angin`, `Wind`, `Kecepatan Angin` |
+| Ketinggian | `Ketinggian`, `Altitude`, `Elevasi` |
+| Arah | `Arah`, `Direction`, `Bearing` |
+
+Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (butuh API cuaca berbayar atau sensor GPS asli saat pemotretan) — isi kolom-kolom ini dari data yang sudah kamu punya kalau ingin baris info geografis muncul; kalau kosong, barisnya otomatis disembunyikan (bukan tampil kosong).
 
 ---
 

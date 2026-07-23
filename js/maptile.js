@@ -118,9 +118,13 @@ async function fetchTileImage(provider, x, y, z, timeoutMs) {
 }
 
 /**
- * Build a square map thumbnail (as a canvas) centered on lat/lng by
- * fetching the 3x3 grid of surrounding tiles at the given zoom and
- * cropping/compositing them to `size`x`size` pixels.
+ * Build a map thumbnail (as a canvas) centered on lat/lng by fetching
+ * the 3x3 grid of surrounding tiles at the given zoom and cropping/
+ * compositing them to `width`x`height` pixels (defaults to a square
+ * of `size`x`size` for backward compatibility — Template 1 always
+ * uses a square; Template 2 can request any reasonable aspect ratio,
+ * cropped from the same 3x3 grid rather than stretched, so there's
+ * no distortion).
  *
  * Returns { canvas, ok } where ok=false means one or more tiles
  * failed to load (canvas will still contain whatever loaded,
@@ -131,9 +135,11 @@ async function buildMapThumbnail(lat, lng, opts) {
   const provider = opts.provider || 'street';
   const zoom = opts.zoom || 16;
   const size = opts.size || 256;
+  const outW = opts.width || size;
+  const outH = opts.height || size;
   const timeoutMs = opts.timeoutMs || 8000;
 
-  const cacheKey = `${provider}|${lat.toFixed(5)}|${lng.toFixed(5)}|${zoom}|${size}`;
+  const cacheKey = `${provider}|${lat.toFixed(5)}|${lng.toFixed(5)}|${zoom}|${outW}x${outH}`;
   if (_thumbCache.has(cacheKey)) {
     return _thumbCache.get(cacheKey);
   }
@@ -186,13 +192,13 @@ async function buildMapThumbnail(lat, lng, opts) {
   const pyInGrid = worldY - gridOriginWorldY;
 
   const outCanvas = document.createElement('canvas');
-  outCanvas.width = size;
-  outCanvas.height = size;
+  outCanvas.width = outW;
+  outCanvas.height = outH;
   const octx = outCanvas.getContext('2d');
   octx.drawImage(
     gridCanvas,
-    pxInGrid - size / 2, pyInGrid - size / 2, size, size,
-    0, 0, size, size
+    pxInGrid - outW / 2, pyInGrid - outH / 2, outW, outH,
+    0, 0, outW, outH
   );
 
   const result = { canvas: outCanvas, ok: successCount === grid.length, successCount, total: grid.length };

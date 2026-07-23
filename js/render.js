@@ -171,15 +171,18 @@ function addRoundRectTopSubpath(ctx, x, y, w, h, r) {
 /**
  * Draw the abstract placeholder "map" thumbnail directly with canvas
  * primitives (used when no custom thumbnail image is supplied).
+ * Works for any w x h — not just a square — so it also serves
+ * Template 2's adjustable map aspect ratio.
  */
-function drawPlaceholderMap(ctx, x, y, size, cornerRadius) {
+function drawPlaceholderMap(ctx, x, y, w, h, cornerRadius) {
+  const short = Math.min(w, h);
   ctx.save();
-  roundRectPath(ctx, x, y, size, size, cornerRadius);
+  roundRectPath(ctx, x, y, w, h, cornerRadius);
   ctx.clip();
 
   // base tone
   ctx.fillStyle = '#3a4238';
-  ctx.fillRect(x, y, size, size);
+  ctx.fillRect(x, y, w, h);
 
   // pseudo-random terrain blocks (deterministic per-tile, no external asset)
   let seed = 1337;
@@ -190,8 +193,8 @@ function drawPlaceholderMap(ctx, x, y, size, cornerRadius) {
   for (let i = 0; i < 26; i++) {
     const bw = 10 + rnd() * 30;
     const bh = 10 + rnd() * 30;
-    const bx = x + rnd() * size;
-    const by = y + rnd() * size;
+    const bx = x + rnd() * w;
+    const by = y + rnd() * h;
     const tone = 55 + rnd() * 35;
     ctx.fillStyle = `rgb(${tone - 8},${tone},${tone - 12})`;
     ctx.fillRect(bx, by, bw, bh);
@@ -199,25 +202,25 @@ function drawPlaceholderMap(ctx, x, y, size, cornerRadius) {
 
   // roads
   ctx.strokeStyle = 'rgba(220,210,190,0.85)';
-  ctx.lineWidth = size * 0.014;
+  ctx.lineWidth = short * 0.014;
   ctx.beginPath();
-  ctx.moveTo(x, y + size * 0.42);
-  ctx.lineTo(x + size, y + size * 0.58);
+  ctx.moveTo(x, y + h * 0.42);
+  ctx.lineTo(x + w, y + h * 0.58);
   ctx.stroke();
 
   ctx.strokeStyle = 'rgba(200,195,180,0.7)';
-  ctx.lineWidth = size * 0.01;
+  ctx.lineWidth = short * 0.01;
   ctx.beginPath();
-  ctx.moveTo(x + size * 0.32, y);
-  ctx.lineTo(x + size * 0.5, y + size);
+  ctx.moveTo(x + w * 0.32, y);
+  ctx.lineTo(x + w * 0.5, y + h);
   ctx.stroke();
 
   ctx.restore();
 
   // location pin marker
-  const pinX = x + size * 0.42;
-  const pinY = y + size * 0.46;
-  const pinR = size * 0.055;
+  const pinX = x + w * 0.42;
+  const pinY = y + h * 0.46;
+  const pinR = short * 0.055;
   ctx.fillStyle = '#e5464f';
   ctx.beginPath();
   ctx.arc(pinX, pinY, pinR, 0, Math.PI * 2);
@@ -235,11 +238,22 @@ function drawPlaceholderMap(ctx, x, y, size, cornerRadius) {
 
   // subtle border
   ctx.save();
-  roundRectPath(ctx, x, y, size, size, cornerRadius);
+  roundRectPath(ctx, x, y, w, h, cornerRadius);
   ctx.lineWidth = 2;
   ctx.strokeStyle = 'rgba(255,255,255,0.25)';
   ctx.stroke();
   ctx.restore();
+}
+
+/**
+ * Parse a "W:H" aspect ratio string (e.g. "4:3") into a width/height
+ * ratio float. Falls back to 1 (square) for anything unparseable.
+ */
+function parseMapAspect(str) {
+  const m = String(str || '1:1').match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (!m) return 1;
+  const w = parseFloat(m[1]), h = parseFloat(m[2]);
+  return (w > 0 && h > 0) ? w / h : 1;
 }
 
 /**
@@ -508,7 +522,7 @@ function renderOverlayClassic(canvas, row, opts) {
       }
       ctx.restore();
     } else {
-      drawPlaceholderMap(ctx, mapX, mapY, mapSize, boxRadius);
+      drawPlaceholderMap(ctx, mapX, mapY, mapSize, mapSize, boxRadius);
       if (opts.showMapPin === false) {
         // placeholder draws its own pin; nothing extra needed when on
       }
@@ -569,36 +583,139 @@ function renderOverlayClassic(canvas, row, opts) {
  */
 function formatDecimalLatLngLine(lat, lng) {
   if (isNaN(lat) || isNaN(lng)) return '';
-  return `Lat ${lat.toFixed(6)}, Long ${lng.toFixed(6)}`;
+  return `Lat ${lat.toFixed(6)}   Long ${lng.toFixed(6)}`;
 }
 
 /**
- * Format Template 2's date line: "DD/MM/YY[ h:mm AM/PM] GMT+HH:MM".
+ * Format Template 2's date line: "Weekday, DD/MM/YYYY[ h:mm AM/PM] GMT+HH:MM".
  */
 function formatDateGmtLine(dateStr, timeStr, showTime, gmtOffset) {
   const d = parseFlexibleDate(dateStr);
   const offset = gmtOffset || '+08:00';
   if (!d) return `GMT${offset}`;
+  const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const p = (n) => String(n).padStart(2, '0');
-  let line = `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
+  let line = `${daysEn[d.getDay()]}, ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
   if (showTime && timeStr) {
     line += ` ${formatTimeForOverlay(timeStr)}`;
   }
   return `${line} GMT${offset}`;
 }
 
+function drawPhoneIconLocal(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(-r * 0.55, -r * 0.55, r * 0.42, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(r * 0.55, r * 0.55, r * 0.42, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(-r * 0.32, -r * 0.32, r * 0.64, r * 0.64);
+  ctx.restore();
+}
+
+function drawSunIconLocal(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1, r * 0.18);
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.4, 0, Math.PI * 2); ctx.fill();
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r * 0.58, cy + Math.sin(a) * r * 0.58);
+    ctx.lineTo(cx + Math.cos(a) * r * 0.95, cy + Math.sin(a) * r * 0.95);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWindIconLocal(ctx, x, y, w, h, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, h * 0.13);
+  ctx.lineCap = 'round';
+  [[0.22, 0.92], [0.52, 0.7], [0.82, 0.5]].forEach(function (pair) {
+    const yf = pair[0], wf = pair[1];
+    ctx.beginPath();
+    ctx.moveTo(x, y + h * yf);
+    ctx.lineTo(x + w * wf, y + h * yf);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawMountainIconLocal(ctx, x, y, w, h, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x + w * 0.36, y + h * 0.12);
+  ctx.lineTo(x + w * 0.6, y + h * 0.52);
+  ctx.lineTo(x + w * 0.78, y + h * 0.3);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCompassIconLocal(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, r * 0.14);
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 0.62);
+  ctx.lineTo(cx + r * 0.22, cy);
+  ctx.lineTo(cx, cy + r * 0.2);
+  ctx.lineTo(cx - r * 0.22, cy);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 /**
- * Template 2 ("GPS Map Camera Style") — a self-drawn recreation of
- * the real GPS Map Camera app's on-photo watermark: a full-bleed bar
- * (no rounding, no margin) spanning the photo's full width, with the
- * app badge in the top-right corner, a bold "City,Province,Country"
- * title with a country flag, the full street address, a decimal
- * lat/long line, and a date + GMT-offset line. Location text comes
- * from opts.geo (reverse-geocoded from the coordinate) when
- * available, falling back to the row's manual CSV columns otherwise
- * — so the layout never ends up with blank fields even before/without
- * a geocoding result. See renderOverlay() for the full option
- * reference.
+ * Draw a horizontal row of up to 4 icon+value chips (temperature,
+ * wind, altitude, compass direction) spaced evenly across `w`.
+ * `items`: [{ icon: 'temp'|'wind'|'altitude'|'direction', text }]
+ */
+function drawGeoInfoRow(ctx, x, y, w, h, fontPx, color, items) {
+  if (!items.length) return;
+  const cellW = w / items.length;
+  ctx.save();
+  ctx.font = `600 ${fontPx}px Inter, Arial, sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  items.forEach(function (item, i) {
+    const cellX = x + i * cellW;
+    const iconSize = h * 0.85;
+    const iconY = y + (h - iconSize) / 2;
+    if (item.icon === 'temp') drawSunIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, color);
+    else if (item.icon === 'wind') drawWindIconLocal(ctx, cellX, iconY, iconSize, iconSize, color);
+    else if (item.icon === 'altitude') drawMountainIconLocal(ctx, cellX, iconY, iconSize, iconSize, color);
+    else if (item.icon === 'direction') drawCompassIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, color);
+    ctx.fillStyle = color;
+    ctx.fillText(truncateToWidth(ctx, item.text, cellW - iconSize - h * 0.16), cellX + iconSize + h * 0.16, y + h / 2);
+  });
+  ctx.restore();
+}
+
+/**
+ * Template 2 ("GPS Map Camera Style") -- a self-drawn recreation of
+ * the real GPS Map Camera app's on-photo watermark. Uses the SAME
+ * floating rounded-card + top-right-attached-badge mechanic as
+ * Template 1 (see renderOverlayClassic): the badge is positioned and
+ * merged into the box exactly the same way, per the reference
+ * screenshots, just with an adjustable map aspect ratio and more
+ * optional content rows: a bold "City, Province, Country" title with
+ * a country flag, the full street address, a decimal lat/long line,
+ * a date+time+GMT-offset line, and three fully optional rows (Note,
+ * Contact number, Geographic info) that only take up space when
+ * there's actual data for them. Location text comes from opts.geo
+ * (reverse-geocoded from the coordinate) when available, falling
+ * back to the row's manual CSV columns otherwise. See renderOverlay()
+ * for the full option reference.
  */
 function renderOverlayTemplate2(canvas, row, opts) {
   const W = opts.width;
@@ -612,91 +729,159 @@ function renderOverlayTemplate2(canvas, row, opts) {
   const scale = refScale * (opts.overlayScale / 100);
   const fontScale = refScale * (opts.fontScale / 100);
 
+  // ---- resolve content up front (drives box height below) ----
   const geo = opts.geo || {};
   const titleParts = [geo.city || row.city, geo.province, geo.country].filter(Boolean);
-  const titleText = titleParts.length ? titleParts.join(',') : (row.city || row.location || '');
+  const titleText = titleParts.length ? titleParts.join(', ') : (row.city || row.location || '');
   const addressText = geo.address || row.address || '';
+  const noteText = row.note || '';
+  const contactText = row.phone || '';
+  const geoItems = [];
+  if (row.temperature) geoItems.push({ icon: 'temp', text: String(row.temperature) });
+  if (row.wind) geoItems.push({ icon: 'wind', text: String(row.wind) });
+  if (row.altitude) geoItems.push({ icon: 'altitude', text: String(row.altitude) });
+  if (row.direction) geoItems.push({ icon: 'direction', text: String(row.direction) });
 
-  // ---- geometry (fixed formula, same "worst-case" approach as the
-  // classic template's fixed boxH: reserves enough room for a 2-line
-  // address so nothing ever overflows the bar, regardless of how
-  // short the actual text turns out to be) ----
-  const padX = 30 * scale;
-  const padTop = 16 * scale;
-  const padBottom = 18 * scale;
+  // ---- geometry: same floating-card layout as Template 1 (margin,
+  // separate rounded map square/rect on the left, badge merged flush
+  // onto the text box's top-right corner poking above it) -- only the
+  // box height formula and the map's aspect ratio differ. ----
+  const margin = 34 * scale;
   const badgeScale = (opts.badgeScale != null ? opts.badgeScale : 100) / 100;
-  const badgeH = 36 * scale * badgeScale;
-  const boxRadius = Math.max(0, Math.min((opts.cornerRadius != null ? opts.cornerRadius : 10) * scale, 20 * scale));
+  const badgeH = 45 * scale * badgeScale;
+  const radiusBase = (opts.cornerRadius != null ? opts.cornerRadius : 10);
+  const boxRadius = Math.max(0, Math.min(radiusBase * scale, 45 * scale / 2));
+  const mapGap = 20 * scale;
 
-  const titleFont = Math.round(34 * fontScale);
-  const bodyFont = Math.round(25 * fontScale);
-  const titleLineH = titleFont * 1.15;
-  const bodyLineH = bodyFont * 1.32;
-  const rowsBelowTitle = 4; // up to 2 address lines + lat/long line + date line
-  const barH = Math.min(
-    padTop + badgeH + 6 * scale + titleLineH + 4 * scale + rowsBelowTitle * bodyLineH + padBottom,
-    H - 2 * (10 * scale)
+  const titleFont = Math.round(32 * fontScale);
+  const bodyFont = Math.round(24 * fontScale);
+  const titleLineH = titleFont * 1.2;
+  const bodyLineH = bodyFont * 1.3;
+  const padTop = 20 * scale;
+  const padBottom = 16 * scale;
+
+  // each optional row (Note / Contact / Geo-info) costs exactly one
+  // bodyLineH, matching how much the drawing code below advances the
+  // cursor for each -- so the box is always sized exactly for what's
+  // actually going to be drawn, never too short/tall.
+  let extraRows = 0;
+  if (noteText) extraRows++;
+  if (contactText) extraRows++;
+  if (geoItems.length) extraRows++;
+
+  const boxH = Math.min(
+    padTop + titleLineH + 4 * scale + bodyLineH * 2 /* address, up to 2 lines */
+      + bodyLineH /* lat/long */ + bodyLineH /* date */ + extraRows * bodyLineH + padBottom,
+    H - margin * 2 - badgeH
   );
 
-  const barY = opts.overlayPos === 'top' ? 0 : H - barH;
+  const mapAspect = parseMapAspect(opts.mapAspect);
+  const mapH = boxH;
+  const maxMapW = (W - margin * 2) * 0.55;
+  const mapW = Math.min(mapH * mapAspect, maxMapW);
 
-  // ---- bar background: full-bleed, no rounding, no side margin ----
-  ctx.fillStyle = hexToRgba('#0c1210', opts.bgOpacity / 100);
-  ctx.fillRect(0, barY, W, barH);
+  const boxY = opts.overlayPos === 'top' ? margin + badgeH : H - margin - boxH;
+  const mapX = margin;
+  const mapY = boxY;
+  const textBoxX = opts.showMap ? margin + mapW + mapGap : margin;
+  const textBoxW = W - margin - textBoxX;
 
-  // ---- optional map thumbnail, inset on the left edge of the bar ----
-  const mapMargin = 12 * scale;
-  const mapSize = opts.showMap ? barH - mapMargin * 2 : 0;
-  const mapX = mapMargin;
-  const mapY = barY + mapMargin;
-  if (opts.showMap) {
-    if (opts.mapImg) {
-      ctx.save();
-      roundRectPath(ctx, mapX, mapY, mapSize, mapSize, boxRadius);
-      ctx.clip();
-      ctx.drawImage(opts.mapImg, mapX, mapY, mapSize, mapSize);
-      if (opts.showMapPin !== false) {
-        drawMapPinMarkerLocal(ctx, mapX + mapSize / 2, mapY + mapSize / 2, mapSize * 0.06);
-      }
-      ctx.restore();
-    } else {
-      drawPlaceholderMap(ctx, mapX, mapY, mapSize, boxRadius);
-    }
-  }
-
-  const textStartX = (opts.showMap ? mapX + mapSize + mapMargin : padX);
-  const textRightX = W - padX;
-
-  // ---- badge: top-right corner of the bar ----
+  // ---- badge geometry (flush to the box's top-right corner) ----
   const badgeLabel = 'GPS Map Camera';
   const badgeStyle = opts.badgeStyle || 'logo';
   let badgeW = measureBadgeWidth(ctx, badgeH, opts.logoImg, badgeLabel, badgeStyle);
-  badgeW = Math.min(badgeW, (textRightX - textStartX) * 0.6);
-  const badgeX = textRightX - badgeW;
-  const badgeY = barY + padTop * 0.5;
-  drawBadgeContent(ctx, badgeX, badgeY, badgeW, badgeH, opts.logoImg, badgeLabel, badgeStyle);
+  badgeW = Math.min(badgeW, textBoxW * 0.65);
+  let badgeX = textBoxX + textBoxW - badgeW;
+  badgeX = Math.max(badgeX, textBoxX + 4 * scale);
+  const badgeY = boxY - badgeH;
+  const drawBadge = badgeY >= 0;
 
-  // ---- text block ----
-  const textAvailW = textRightX - textStartX;
+  // ---- optional drop shadow (identical technique to Template 1) ----
+  const shadowStrength = (opts.shadowStrength != null ? opts.shadowStrength : 0);
+  if (shadowStrength > 0) {
+    const s01 = shadowStrength / 100;
+
+    function traceAllSilhouettes() {
+      ctx.beginPath();
+      if (opts.showMap) addRoundRectSubpath(ctx, mapX, mapY, mapW, mapH, boxRadius);
+      addRoundRectSubpath(ctx, textBoxX, boxY, textBoxW, boxH, boxRadius);
+      if (drawBadge) addRoundRectTopSubpath(ctx, badgeX, badgeY, badgeW, badgeH + boxRadius, boxRadius);
+    }
+
+    ctx.save();
+    ctx.shadowColor = `rgba(0,0,0,${0.15 + s01 * 0.5})`;
+    ctx.shadowBlur = (4 + s01 * 30) * scale;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = (2 + s01 * 8) * scale;
+    ctx.fillStyle = '#000000';
+    traceAllSilhouettes();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    traceAllSilhouettes();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ---- text box + attached badge: one merged fill (no seam) ----
+  ctx.save();
+  ctx.beginPath();
+  addRoundRectSubpath(ctx, textBoxX, boxY, textBoxW, boxH, boxRadius);
+  if (drawBadge) {
+    addRoundRectTopSubpath(ctx, badgeX, badgeY, badgeW, badgeH + boxRadius, boxRadius);
+  }
+  ctx.fillStyle = hexToRgba('#141816', opts.bgOpacity / 100);
+  ctx.fill();
+  ctx.restore();
+
+  // ---- badge content ----
+  if (drawBadge) {
+    drawBadgeContent(ctx, badgeX, badgeY, badgeW, badgeH, opts.logoImg, badgeLabel, badgeStyle);
+  }
+
+  // ---- map: separate rounded rect, aspect ratio adjustable ----
+  if (opts.showMap) {
+    if (opts.mapImg) {
+      ctx.save();
+      roundRectPath(ctx, mapX, mapY, mapW, mapH, boxRadius);
+      ctx.clip();
+      ctx.drawImage(opts.mapImg, mapX, mapY, mapW, mapH);
+      if (opts.showMapPin !== false) {
+        drawMapPinMarkerLocal(ctx, mapX + mapW / 2, mapY + mapH / 2, Math.min(mapW, mapH) * 0.06);
+      }
+      ctx.restore();
+    } else {
+      drawPlaceholderMap(ctx, mapX, mapY, mapW, mapH, boxRadius);
+    }
+  }
+
+  // ---- text content ----
+  const padX = 26 * scale;
+  const textStartX = textBoxX + padX;
+  const textAvailW = textBoxX + textBoxW - padX - textStartX;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = opts.fontColor;
 
-  let cursorY = barY + padTop + badgeH + 6 * scale;
+  let cursorY = boxY + padTop;
 
-  // Title line: "City,Province,Country" + flag icon
+  // Title + flag
   ctx.font = `700 ${titleFont}px Inter, Arial, sans-serif`;
   const flagImg = opts.countryFlagImg;
-  const flagH = titleFont * 0.62;
+  const flagH = titleFont * 0.6;
   const flagW = flagImg ? flagH * (flagImg.width / flagImg.height) : 0;
-  const flagGap = flagImg ? 10 * scale : 0;
+  const flagGap = flagImg ? 8 * scale : 0;
   const titleMaxW = textAvailW - flagW - flagGap;
+  cursorY += titleFont * 0.85;
   const titleDrawn = truncateToWidth(ctx, titleText, Math.max(titleMaxW, 10));
   ctx.fillText(titleDrawn, textStartX, cursorY);
   if (flagImg) {
     const titleW = ctx.measureText(titleDrawn).width;
-    ctx.drawImage(flagImg, textStartX + titleW + flagGap, cursorY - flagH * 0.86, flagW, flagH);
+    ctx.drawImage(flagImg, textStartX + titleW + flagGap, cursorY - flagH * 0.82, flagW, flagH);
   }
+  cursorY += 4 * scale;
 
   // Address (up to 2 lines)
   ctx.font = `400 ${bodyFont}px Inter, Arial, sans-serif`;
@@ -708,12 +893,32 @@ function renderOverlayTemplate2(canvas, row, opts) {
   cursorY += bodyLineH;
   ctx.fillText(truncateToWidth(ctx, formatDecimalLatLngLine(row.lat, row.lng), textAvailW), textStartX, cursorY);
 
-  // Date + GMT offset line
+  // Date + time + GMT offset line
   cursorY += bodyLineH;
-  const dtLine = formatDateGmtLine(row.date, row.time, !!opts.showTime, opts.gmtOffset);
-  ctx.fillText(truncateToWidth(ctx, dtLine, textAvailW), textStartX, cursorY);
-}
+  ctx.fillText(truncateToWidth(ctx, formatDateGmtLine(row.date, row.time, !!opts.showTime, opts.gmtOffset), textAvailW), textStartX, cursorY);
 
+  // Note (optional)
+  if (noteText) {
+    cursorY += bodyLineH;
+    ctx.fillText(truncateToWidth(ctx, `Note : ${noteText}`, textAvailW), textStartX, cursorY);
+  }
+
+  // Contact number (optional, with phone icon)
+  if (contactText) {
+    cursorY += bodyLineH;
+    const iconR = bodyFont * 0.4;
+    drawPhoneIconLocal(ctx, textStartX + iconR, cursorY - bodyFont * 0.32, iconR, opts.fontColor);
+    ctx.font = `400 ${bodyFont}px Inter, Arial, sans-serif`;
+    ctx.fillStyle = opts.fontColor;
+    ctx.fillText(truncateToWidth(ctx, contactText, textAvailW - iconR * 2 - 8 * scale), textStartX + iconR * 2 + 8 * scale, cursorY);
+  }
+
+  // Geographic info row (optional: temperature / wind / altitude / direction)
+  if (geoItems.length) {
+    cursorY += bodyLineH;
+    drawGeoInfoRow(ctx, textStartX, cursorY - bodyFont * 0.85, textAvailW, bodyFont * 1.05, Math.round(bodyFont * 0.8), opts.fontColor, geoItems);
+  }
+}
 /**
  * Truncate a single line of text with an ellipsis so it fits maxWidth.
  */
