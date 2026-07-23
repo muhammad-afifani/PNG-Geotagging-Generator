@@ -147,7 +147,12 @@
       if (settings.showMap && settings.mapSource !== 'offline') {
         mapImg = await window.GeoStamp.resolveMapForRow(renderRow, settings);
       }
-      const opts = window.GeoStamp.buildOverlayOpts(renderRow, { w: canvas.width, h: canvas.height }, settings, mapImg);
+      // resolve reverse-geocoded location (Template 2 only, same logic as tab 1)
+      let geoResult = null;
+      if (settings.template === 'gpscam2' && settings.autoGeocode) {
+        geoResult = await window.GeoStamp.resolveGeoForRow(renderRow, settings);
+      }
+      const opts = window.GeoStamp.buildOverlayOpts(renderRow, { w: canvas.width, h: canvas.height }, settings, mapImg, geoResult);
       window.GeoStamp.renderOverlay(overlayCanvas, renderRow, opts);
       ctx.drawImage(overlayCanvas, 0, 0);
 

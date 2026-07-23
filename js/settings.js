@@ -25,7 +25,12 @@ const DEFAULT_SETTINGS = {
   shadowStrength: 35, // drop-shadow intensity 0..100 (0 = none)
   badgeStyle: 'logo', // 'logo' | 'text-white' | 'text-dark'
   badgeScale: 100,    // badge size percent
-  projectNameOverride: '' // if set, overrides the Project Name line for all rows
+  projectNameOverride: '', // if set, overrides the Project Name line for all rows
+
+  template: 'classic',  // 'classic' (Template 1) | 'gpscam2' (Template 2)
+  gmtOffset: '+08:00',  // GMT offset shown on Template 2's date line
+  showTime: false,       // Template 2 only: include time-of-day on the date line
+  autoGeocode: true      // Template 2 only: auto-detect city/province/country/address from lat+lng
 };
 
 function loadSettings() {

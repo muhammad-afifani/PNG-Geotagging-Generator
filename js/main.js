@@ -30,6 +30,12 @@
     logoPreview: document.getElementById('logoPreview'),
     logoStatus: document.getElementById('logoStatus'),
 
+    overlayTemplate: document.getElementById('overlayTemplate'),
+    template2Fields: document.getElementById('template2Fields'),
+    gmtOffset: document.getElementById('gmtOffset'),
+    showTime: document.getElementById('showTime'),
+    autoGeocode: document.getElementById('autoGeocode'),
+
     canvasSize: document.getElementById('canvasSize'),
     customSizeRow: document.getElementById('customSizeRow'),
     customW: document.getElementById('customW'),
@@ -105,6 +111,12 @@
 
   // ---------- settings <-> UI ----------
   function applySettingsToUI(s) {
+    el.overlayTemplate.value = s.template;
+    el.gmtOffset.value = s.gmtOffset;
+    el.showTime.checked = s.showTime;
+    el.autoGeocode.checked = s.autoGeocode;
+    updateTemplateFieldVisibility();
+
     el.canvasSize.value = s.canvasSize;
     el.customW.value = s.customW;
     el.customH.value = s.customH;
@@ -138,6 +150,11 @@
 
   function readSettingsFromUI() {
     return {
+      template: el.overlayTemplate.value,
+      gmtOffset: el.gmtOffset.value,
+      showTime: el.showTime.checked,
+      autoGeocode: el.autoGeocode.checked,
+
       canvasSize: el.canvasSize.value,
       customW: parseInt(el.customW.value) || 1080,
       customH: parseInt(el.customH.value) || 500,
@@ -158,6 +175,10 @@
       mapZoom: parseInt(el.mapZoom.value),
       showMapPin: el.showMapPin.checked
     };
+  }
+
+  function updateTemplateFieldVisibility() {
+    el.template2Fields.classList.toggle('hidden', el.overlayTemplate.value !== 'gpscam2');
   }
 
   function updateMapFieldVisibility() {
@@ -191,6 +212,13 @@
     node.addEventListener('change', () => {
       el.customSizeRow.classList.toggle('hidden', el.canvasSize.value !== 'custom');
       updateMapFieldVisibility();
+      onSettingsChanged();
+    });
+  });
+
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.autoGeocode].forEach(node => {
+    node.addEventListener('change', () => {
+      updateTemplateFieldVisibility();
       onSettingsChanged();
     });
   });
@@ -436,6 +464,28 @@
     }
   }
 
+  // ---------- Template 2 reverse-geocoding ----------
+  // Mirrors resolveMapForRow()'s contract exactly: async, network-
+  // dependent, timeout-guarded, and NEVER throws or hangs — any
+  // failure just resolves to no geo data, and the renderer falls back
+  // to the row's manual CSV columns (Lokasi/Alamat) automatically.
+  const GEO_FETCH_TIMEOUT_MS = 7000;
+  const FLAG_FETCH_TIMEOUT_MS = 6000;
+
+  async function resolveGeoForRow(row, settings) {
+    if (settings.template !== 'gpscam2' || !settings.autoGeocode) return { geo: null, flagImg: null };
+    if (isNaN(row.lat) || isNaN(row.lng)) return { geo: null, flagImg: null };
+    try {
+      const geo = await reverseGeocode(row.lat, row.lng, GEO_FETCH_TIMEOUT_MS);
+      if (!geo) return { geo: null, flagImg: null };
+      const flagImg = geo.flagIso2 ? await fetchCountryFlag(geo.flagIso2, FLAG_FETCH_TIMEOUT_MS) : null;
+      return { geo, flagImg };
+    } catch (err) {
+      console.warn('Reverse geocode failed for row, using manual CSV columns instead:', row.file, err);
+      return { geo: null, flagImg: null };
+    }
+  }
+
   // ---------- preview ----------
   let previewRequestId = 0;
 
@@ -457,10 +507,15 @@
     renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, null));
     el.previewRowTag.textContent = `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length} — ${row.file}`;
 
-    if (settingsSnapshot.showMap && settingsSnapshot.mapSource !== 'offline') {
-      const mapCanvas = await resolveMapForRow(row, settingsSnapshot);
+    const needsMap = settingsSnapshot.showMap && settingsSnapshot.mapSource !== 'offline';
+    const needsGeo = settingsSnapshot.template === 'gpscam2' && settingsSnapshot.autoGeocode;
+    if (needsMap || needsGeo) {
+      const [mapCanvas, geoResult] = await Promise.all([
+        needsMap ? resolveMapForRow(row, settingsSnapshot) : Promise.resolve(null),
+        needsGeo ? resolveGeoForRow(row, settingsSnapshot) : Promise.resolve({ geo: null, flagImg: null })
+      ]);
       if (myRequestId !== previewRequestId) return; // a newer preview request superseded this one
-      renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, mapCanvas));
+      renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, mapCanvas, geoResult));
     }
   }
 
@@ -474,8 +529,9 @@
     return { ...row, location: ov };
   }
 
-  function buildOverlayOpts(row, dims, settings, mapCanvas) {
+  function buildOverlayOpts(row, dims, settings, mapCanvas, geoResult) {
     return {
+      template: settings.template,
       logoImg: state.logoImg,
       mapImg: mapCanvas,
       width: dims.w,
@@ -492,7 +548,11 @@
       badgeScale: settings.badgeScale,
       showMap: settings.showMap,
       showMapPin: settings.showMapPin,
-      showLocation: settings.showLocation
+      showLocation: settings.showLocation,
+      gmtOffset: settings.gmtOffset,
+      showTime: settings.showTime,
+      geo: geoResult ? geoResult.geo : null,
+      countryFlagImg: geoResult ? geoResult.flagImg : null
     };
   }
 
@@ -636,6 +696,8 @@
 
     let mapFailCount = 0;
     let renderFailCount = 0;
+    let geoFailCount = 0;
+    const needsGeo = settingsSnapshot.template === 'gpscam2' && settingsSnapshot.autoGeocode;
 
     for (let i = 0; i < total; i++) {
       const row = state.rows[i];
@@ -647,10 +709,18 @@
         if (!mapCanvas) mapFailCount++;
       }
 
+      // 1b) resolve reverse-geocoded location for this row (Template 2
+      // only; same timeout-guarded, never-hangs contract as the map)
+      let geoResult = null;
+      if (needsGeo) {
+        geoResult = await resolveGeoForRow(row, settingsSnapshot);
+        if (!geoResult.geo) geoFailCount++;
+      }
+
       // 2) render the overlay (synchronous, fast, cannot hang)
       try {
         const renderRow = applyProjectOverride(row, settingsSnapshot);
-        renderOverlay(workCanvas, renderRow, buildOverlayOpts(renderRow, dims, settingsSnapshot, mapCanvas));
+        renderOverlay(workCanvas, renderRow, buildOverlayOpts(renderRow, dims, settingsSnapshot, mapCanvas, geoResult));
       } catch (err) {
         console.error('Render failed for row', row.file, err);
         renderFailCount++;
@@ -723,6 +793,9 @@
     if (renderFailCount > 0) {
       extraMsg += ` ${renderFailCount} baris mengalami masalah saat render/encode.`;
     }
+    if (needsGeo && geoFailCount > 0) {
+      extraMsg += ` ${geoFailCount} baris gagal deteksi lokasi otomatis, memakai kolom Lokasi/Alamat dari CSV sebagai gantinya.`;
+    }
     el.doneMsg.innerHTML = `Selesai! ZIP berisi <strong>${total}</strong> file PNG telah diunduh.${extraMsg ? '<br><span style="color:var(--text-dim);font-size:11.5px;">' + extraMsg.trim() + '</span>' : ''}`;
   }
 
@@ -760,6 +833,7 @@
     buildOverlayOpts: (row, dims, settings, mapImg) => buildOverlayOpts(row, dims, settings, mapImg),
     applyProjectOverride: (row, settings) => applyProjectOverride(row, settings),
     resolveMapForRow: (row, settings) => resolveMapForRow(row, settings),
+    resolveGeoForRow: (row, settings) => resolveGeoForRow(row, settings),
     renderOverlay: (canvas, row, opts) => renderOverlay(canvas, row, opts),
     sanitizeFilename: (s) => sanitizeFilename(s),
     timestampSlug: () => timestampSlug()

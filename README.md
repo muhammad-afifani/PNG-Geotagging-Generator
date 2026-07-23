@@ -93,7 +93,9 @@ css/
 js/
   dms.js        -> konversi Decimal Degrees <-> DMS (N/S/E/W)
   maptile.js    -> fetch tile peta asli (OSM/Esri) + cache + pin marker
-  render.js     -> mesin render Canvas (kotak overlay, badge, teks, komposisi peta)
+  countries.js  -> tabel kode negara -> nama Indonesia + kode bendera (Template 2)
+  geocode.js    -> reverse-geocoding (Esri) + fetch bendera negara (Template 2)
+  render.js     -> mesin render Canvas (dispatcher Template 1/2: kotak overlay, badge, teks, komposisi peta)
   csv.js        -> parsing CSV + auto-deteksi kolom
   settings.js   -> LocalStorage + export/import preset JSON
   main.js       -> controller UI, preview, batching & ZIP generation
@@ -109,8 +111,35 @@ README.md
 
 ---
 
+## Preset Template Watermark
+
+Tab 1 punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay", supaya beberapa gaya watermark bisa dipakai tanpa saling menimpa pengaturan satu sama lain. Menambah Template 3 dan seterusnya di masa depan tidak akan mengubah Template 1/2 yang sudah ada.
+
+### Template 1 — Klasik
+Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`).
+
+### Template 2 — GPS Map Camera
+Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari tampilan watermark asli aplikasi GPS Map Camera: bar gelap penuh dari tepi ke tepi (tanpa sudut membulat/margin), badge logo di pojok kanan-atas bar, judul tebal `Kota,Provinsi,Negara` + bendera negara, alamat lengkap, baris koordinat desimal (`Lat -0.526269, Long 117.264083`), dan baris tanggal + zona waktu (`26/04/26 GMT+08:00`).
+
+Pengaturan khusus Template 2 (muncul otomatis saat template ini dipilih):
+- **Zona Waktu (GMT Offset)** — dropdown WIB/WITA/WIT plus offset umum lainnya, ditulis di baris tanggal.
+- **Tampilkan jam di baris tanggal** — opsional, default mati (mengikuti contoh referensi yang hanya menampilkan tanggal + zona waktu tanpa jam).
+- **Deteksi otomatis lokasi & alamat dari koordinat (reverse geocoding)** — aktif secara default. Saat aktif, judul (kota/provinsi/negara + bendera) dan baris alamat **otomatis dihitung dari Latitude/Longitude tiap baris**, tidak perlu mengisi kolom Lokasi/Alamat di CSV secara manual. Prosesnya:
+  - Menggunakan layanan reverse-geocoding gratis & tanpa API key dari Esri (`geocode.arcgis.com`) — vendor yang sama dengan yang sudah dipakai untuk tile peta, dipilih dengan alasan yang sama: layanan geocoding OpenStreetMap (Nominatim) secara eksplisit melarang pemakaian otomatis/massal tanpa izin, sedangkan endpoint anonim Esri tidak membawa pembatasan itu untuk pemakaian ringan seperti ini.
+  - Bendera negara diambil dari `flagcdn.com` (gratis, tanpa API key).
+  - **Butuh koneksi internet** selama proses generate, dan sedikit lebih lambat untuk CSV berbaris banyak karena tiap baris melakukan satu permintaan lookup (ada cache internal per-koordinat supaya baris dengan titik yang sama/berdekatan tidak dihitung ulang).
+  - Sama seperti fetch peta: **timeout-guarded per baris** (tidak akan pernah macet) — kalau lookup gagal/timeout untuk sebagian baris, baris itu otomatis jatuh ke kolom Lokasi/Alamat dari CSV, dan jumlah baris yang fallback dilaporkan di pesan setelah selesai generate.
+  - Bisa dimatikan kapan saja lewat toggle ini kalau lebih suka mengontrol teks lokasi secara manual dari CSV (misal untuk kerja offline, atau saat sudah punya data alamat yang lebih akurat daripada hasil reverse-geocoding).
+  - Daftar negara yang dikenali (untuk nama + bendera) mencakup ASEAN dan negara-negara umum lainnya; kode negara yang tidak dikenali tetap tampil (tanpa bendera) alih-alih gagal.
+
+Toggle **"Tampilkan thumbnail peta"** yang sudah ada di Template 1 berlaku juga untuk Template 2 — saat dimatikan, bar teks memakai lebar penuh persis seperti contoh referensi; saat dinyalakan, peta kotak kecil disisipkan di sisi kiri bar.
+
+---
+
 ## Fitur Utama
 
+- **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
+- Template 2: deteksi otomatis kota/provinsi/negara + alamat + bendera negara langsung dari koordinat (reverse geocoding), dengan pengaturan zona waktu (GMT offset)
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
 - Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar)
@@ -129,6 +158,7 @@ README.md
 - Untuk CSV sangat besar (ribuan baris) dengan mode peta online aktif, proses generate akan memakan waktu lebih lama karena menunggu respons server tile satu per satu; tidak ada batas jumlah baris, hanya soal waktu tunggu.
 - Fitur cuaca (weather) belum tersedia — memerlukan API cuaca historis terpisah yang umumnya berbayar/terbatas.
 - Deteksi kolom CSV mengandalkan nama header yang mirip; jika header sangat tidak lazim, kolom bisa tidak terbaca — cek panel "kolom terdeteksi" di bawah upload CSV untuk verifikasi sebelum generate.
+- Template 2 dengan reverse-geocoding otomatis aktif butuh koneksi internet dan lebih lambat untuk CSV berbaris banyak (satu lookup per baris, dengan cache untuk koordinat yang sama/berdekatan); daftar nama+bendera negara yang dikenali belum mencakup seluruh dunia — kode negara yang tidak dikenali tetap tampil tanpa bendera.
 
 
 ---
