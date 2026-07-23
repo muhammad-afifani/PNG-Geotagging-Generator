@@ -155,27 +155,39 @@
           </div>
 
           <div id="template2Fields" class="template2-fields hidden">
-            <div class="field">
-              <label for="gmtOffset">Zona Waktu (GMT Offset)</label>
-              <select id="gmtOffset">
-                <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
-                <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
-                <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
-                <option value="+00:00">GMT+00:00</option>
-                <option value="+01:00">GMT+01:00</option>
-                <option value="+02:00">GMT+02:00</option>
-                <option value="+03:00">GMT+03:00</option>
-                <option value="+04:00">GMT+04:00</option>
-                <option value="+05:00">GMT+05:00</option>
-                <option value="+05:30">GMT+05:30</option>
-                <option value="+06:00">GMT+06:00</option>
-                <option value="+09:30">GMT+09:30</option>
-                <option value="+10:00">GMT+10:00</option>
-                <option value="+11:00">GMT+11:00</option>
-                <option value="+12:00">GMT+12:00</option>
-                <option value="-05:00">GMT-05:00</option>
-                <option value="-08:00">GMT-08:00</option>
-              </select>
+            <div class="field-row">
+              <div class="field">
+                <label for="gmtOffset">Zona Waktu (GMT Offset)</label>
+                <select id="gmtOffset">
+                  <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
+                  <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
+                  <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
+                  <option value="+00:00">GMT+00:00</option>
+                  <option value="+01:00">GMT+01:00</option>
+                  <option value="+02:00">GMT+02:00</option>
+                  <option value="+03:00">GMT+03:00</option>
+                  <option value="+04:00">GMT+04:00</option>
+                  <option value="+05:00">GMT+05:00</option>
+                  <option value="+05:30">GMT+05:30</option>
+                  <option value="+06:00">GMT+06:00</option>
+                  <option value="+09:30">GMT+09:30</option>
+                  <option value="+10:00">GMT+10:00</option>
+                  <option value="+11:00">GMT+11:00</option>
+                  <option value="+12:00">GMT+12:00</option>
+                  <option value="-05:00">GMT-05:00</option>
+                  <option value="-08:00">GMT-08:00</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="mapAspect">Rasio Peta</label>
+                <select id="mapAspect">
+                  <option value="1:1" selected>1:1 (persegi)</option>
+                  <option value="4:3">4:3 (landscape)</option>
+                  <option value="3:4">3:4 (potret)</option>
+                  <option value="16:9">16:9 (lebar)</option>
+                  <option value="9:16">9:16 (tinggi)</option>
+                </select>
+              </div>
             </div>
             <div class="field-check">
               <label class="checkbox-row">
@@ -187,7 +199,19 @@
                 <span>Deteksi otomatis nama lokasi &amp; alamat dari koordinat (reverse geocoding)</span>
               </label>
             </div>
-            <p class="hint" style="margin-top:0;">Saat aktif, baris judul (kota, provinsi, negara + bendera) dan alamat otomatis diambil dari titik Latitude/Longitude tiap baris — butuh koneksi internet dan sedikit lebih lambat untuk CSV besar. Kalau dimatikan atau gagal terdeteksi untuk sebagian baris, otomatis memakai kolom Lokasi/Alamat dari CSV sebagai gantinya. Toggle "Tampilkan thumbnail peta" di bawah tetap berlaku untuk template ini juga.</p>
+            <p class="hint" style="margin-top:0;">Saat aktif, baris judul (kota, provinsi, negara + bendera) dan alamat otomatis diambil dari titik Latitude/Longitude tiap baris — butuh koneksi internet dan sedikit lebih lambat untuk CSV besar. Kalau dimatikan atau gagal terdeteksi untuk sebagian baris, otomatis memakai kolom Lokasi/Alamat dari CSV sebagai gantinya. Toggle "Tampilkan thumbnail peta" di bawah tetap berlaku untuk template ini juga — rasio di atas hanya mengatur bentuknya (persegi/lebar/tinggi), bukan tampil-tidaknya.</p>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="noteOverride">Catatan / Note (opsional, semua baris)</label>
+                <input type="text" id="noteOverride" placeholder="Kosongkan untuk pakai kolom Catatan dari CSV">
+              </div>
+              <div class="field">
+                <label for="contactOverride">Nomor Kontak (opsional, semua baris)</label>
+                <input type="text" id="contactOverride" placeholder="Kosongkan untuk pakai kolom Kontak dari CSV">
+              </div>
+            </div>
+            <p class="hint" style="margin-top:0;">Baris Catatan, Kontak, dan info geografis (suhu/angin/ketinggian/arah) sepenuhnya opsional — hanya muncul kalau ada isinya (lewat kolom CSV: <code>catatan</code>, <code>kontak</code>/<code>telepon</code>, <code>suhu</code>, <code>angin</code>, <code>ketinggian</code>, <code>arah</code>) atau lewat kolom Catatan/Kontak di atas. Data cuaca &amp; ketinggian tidak dihitung otomatis oleh tool ini — isi dari CSV kalau kamu punya datanya.</p>
           </div>
 
           <div class="settings-subhead">Ukuran &amp; Tanggal</div>

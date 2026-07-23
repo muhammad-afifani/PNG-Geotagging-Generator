@@ -14,7 +14,17 @@ const COLUMN_ALIASES = {
   time:    ['waktu', 'time', 'jam'],
   location:['lokasi', 'location', 'project', 'projectname', 'nama project'],
   address: ['alamat', 'address'],
-  city:    ['kota', 'city']
+  city:    ['kota', 'city'],
+
+  // Template 2 (GPS Map Camera style) optional extra fields — all
+  // opsional; a row/field with no data simply doesn't render that
+  // line/icon in the overlay.
+  note:        ['catatan', 'note', 'keterangan'],
+  phone:       ['telepon', 'phone', 'kontak', 'nomorkontak', 'notelp', 'nohp', 'nomortelepon'],
+  temperature: ['suhu', 'temperature', 'temp'],
+  wind:        ['angin', 'wind', 'kecepatanangin', 'windspeed'],
+  altitude:    ['ketinggian', 'altitude', 'elevasi', 'elevation'],
+  direction:   ['arah', 'direction', 'bearing', 'arahangin']
 };
 
 function normalizeHeader(h) {
@@ -84,7 +94,13 @@ function normalizeRows(rawRows, colMap) {
       time: get('time'),
       location: locationVal || '',
       address: addressVal || '',
-      city: cityVal || locationVal || ''
+      city: cityVal || locationVal || '',
+      note: get('note') || '',
+      phone: get('phone') || '',
+      temperature: get('temperature') || '',
+      wind: get('wind') || '',
+      altitude: get('altitude') || '',
+      direction: get('direction') || ''
     };
   }).filter(r => r.file); // drop fully blank lines
 }
