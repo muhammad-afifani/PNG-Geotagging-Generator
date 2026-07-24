@@ -89,11 +89,19 @@
   <!-- STEP 1 : DATA (CSV or manual) — full width, up top so it (and the
        map/calendar right after it) are visible without scrolling past
        the whole settings panel below -->
-  <section class="card" id="dataFotoCard">
+  <section class="card collapsible-card" id="dataFotoCard">
         <div class="card-head">
           <span class="step-badge">1</span>
           <h2>Data Foto</h2>
+          <span class="preview-tag hidden" id="dataFotoSummary"></span>
+          <button class="card-collapse-btn" id="dataFotoToggleBtn" type="button" aria-expanded="true" aria-controls="dataFotoBody" aria-label="Buka/tutup Data Foto">
+            <svg class="card-collapse-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
+
+        <div class="collapsible-card-body" id="dataFotoBody">
 
         <div class="mode-toggle">
           <label class="radio-pill">
@@ -107,18 +115,25 @@
         </div>
 
         <div id="csvModePanel">
-          <div id="dropZone" class="dropzone">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p><strong>Drag &amp; drop CSV</strong> di sini, atau klik untuk memilih file</p>
-            <input type="file" id="csvInput" accept=".csv" hidden>
+          <div class="csv-upload-row">
+            <div class="csv-upload-left">
+              <div id="dropZone" class="dropzone">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p><strong>Drag &amp; drop CSV</strong> di sini, atau klik untuk memilih file</p>
+                <input type="file" id="csvInput" accept=".csv" hidden>
+              </div>
+              <div id="csvInfo" class="file-info hidden"></div>
+              <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
+              <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
+            </div>
+            <div class="csv-upload-right">
+              <div id="csvColMap" class="colmap hidden"></div>
+              <p class="hint" id="csvColMapPlaceholder">Info kolom yang terdeteksi dari CSV kamu akan tampil di sini setelah file diupload.</p>
+            </div>
           </div>
-          <div id="csvInfo" class="file-info hidden"></div>
-          <div id="csvColMap" class="colmap hidden"></div>
-          <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
-          <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
         </div>
 
         <div id="manualModePanel" class="hidden">
@@ -209,6 +224,8 @@
             </table>
           </div>
         </div>
+
+        </div><!-- /.collapsible-card-body #dataFotoBody -->
   </section>
 
   <section class="card map-calendar-card">
@@ -502,7 +519,7 @@
               <span>Suhu &amp; angin (cuaca historis)</span>
             </label>
           </div>
-          <p class="hint" style="margin-top:0;">Berlaku untuk Template 1 &amp; 2 — semua opsional dan hanya mengisi data yang benar-benar kosong (tidak menimpa kolom CSV yang sudah kamu isi manual). Butuh koneksi internet, memakai layanan gratis tanpa API key (Esri untuk lokasi, Open-Meteo untuk ketinggian &amp; cuaca) — sedikit lebih lambat untuk CSV besar. Kalau gagal/timeout untuk sebagian baris, otomatis dilewati tanpa menghentikan proses. <strong>Catatan &amp; Kontak tidak bisa dideteksi otomatis</strong> (data internal, tidak ada sumbernya), dan <strong>Arah/bearing</strong> juga tidak bisa (itu arah kamera menghadap saat difoto, dibaca dari sensor kompas HP — tidak tersimpan di mana pun setelah fotonya jadi).</p>
+          <p class="hint" style="margin-top:0;">Isi otomatis data yang masih kosong dari koordinat (Template 1 &amp; 2) — gratis, butuh internet, tidak pernah menimpa data CSV yang sudah kamu isi. <strong>Catatan, Kontak &amp; Arah tidak bisa dideteksi otomatis</strong>, isi manual kalau perlu.</p>
 
         </div>
 
