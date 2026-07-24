@@ -297,12 +297,8 @@
                 <input type="checkbox" id="showTime">
                 <span>Tampilkan jam di baris tanggal</span>
               </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="autoGeocode" checked>
-                <span>Deteksi otomatis nama lokasi &amp; alamat dari koordinat (reverse geocoding)</span>
-              </label>
             </div>
-            <p class="hint" style="margin-top:0;">Saat aktif, baris judul (kota, provinsi, negara + bendera) dan alamat otomatis diambil dari titik Latitude/Longitude tiap baris — butuh koneksi internet dan sedikit lebih lambat untuk CSV besar. Kalau dimatikan atau gagal terdeteksi untuk sebagian baris, otomatis memakai kolom Lokasi/Alamat dari CSV sebagai gantinya. Toggle "Tampilkan thumbnail peta" di bawah tetap berlaku untuk template ini juga — rasio di atas hanya mengatur bentuknya (persegi/lebar/tinggi), bukan tampil-tidaknya.</p>
+            <p class="hint" style="margin-top:0;">Judul (kota, provinsi, negara + bendera) memakai hasil deteksi otomatis dari koordinat kalau diaktifkan di bagian "Deteksi Otomatis dari Koordinat" di bawah. Toggle "Tampilkan thumbnail peta" di bawah tetap berlaku untuk template ini juga — rasio di atas hanya mengatur bentuknya (persegi/lebar/tinggi), bukan tampil-tidaknya.</p>
 
             <div class="field-row">
               <div class="field">
@@ -446,6 +442,24 @@
           <div class="field field-check hidden" id="mapNoticeField">
             <p class="hint" id="mapNoticeText" style="margin:0;"></p>
           </div>
+
+          <div class="settings-subhead">Deteksi Otomatis dari Koordinat</div>
+
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="autoGeocode" checked>
+              <span>Lokasi &amp; alamat (reverse geocoding)</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="autoElevation">
+              <span>Ketinggian (elevation)</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="autoWeather">
+              <span>Suhu &amp; angin (cuaca historis)</span>
+            </label>
+          </div>
+          <p class="hint" style="margin-top:0;">Berlaku untuk Template 1 &amp; 2 — semua opsional dan hanya mengisi data yang benar-benar kosong (tidak menimpa kolom CSV yang sudah kamu isi manual). Butuh koneksi internet, memakai layanan gratis tanpa API key (Esri untuk lokasi, Open-Meteo untuk ketinggian &amp; cuaca) — sedikit lebih lambat untuk CSV besar. Kalau gagal/timeout untuk sebagian baris, otomatis dilewati tanpa menghentikan proses. <strong>Catatan &amp; Kontak tidak bisa dideteksi otomatis</strong> (data internal, tidak ada sumbernya), dan <strong>Arah/bearing</strong> juga tidak bisa (itu arah kamera menghadap saat difoto, dibaca dari sensor kompas HP — tidak tersimpan di mana pun setelah fotonya jadi).</p>
 
         </div>
 
@@ -768,6 +782,7 @@
 <script src="js/maptile.js"></script>
 <script src="js/countries.js"></script>
 <script src="js/geocode.js"></script>
+<script src="js/openmeteo.js"></script>
 <script src="js/render.js"></script>
 <script src="js/csv.js"></script>
 <script src="js/settings.js"></script>

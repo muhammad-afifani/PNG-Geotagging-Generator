@@ -98,6 +98,7 @@ js/
   maptile.js    -> fetch tile peta asli (OSM/Esri) + cache + pin marker
   countries.js  -> tabel kode negara -> nama Indonesia + kode bendera (Template 2)
   geocode.js    -> reverse-geocoding (Esri) + fetch bendera negara (Template 2)
+  openmeteo.js  -> ketinggian & cuaca historis (Open-Meteo, gratis tanpa API key)
   render.js     -> mesin render Canvas (dispatcher Template 1/2: kotak overlay, badge, teks, komposisi peta)
   csv.js        -> parsing CSV + auto-deteksi kolom
   settings.js   -> LocalStorage + export/import preset JSON
@@ -165,8 +166,9 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 
 - **Input data fleksibel**: upload CSV untuk banyak baris sekaligus, atau **Input Manual (satu-satu)** untuk tes cepat 1–5 foto tanpa perlu bikin file CSV — keduanya bisa digabung
 - **Preview Data**: tabel yang menampilkan semua baris yang sudah dimasukkan (dari CSV maupun manual), dengan tombol hapus per baris dan klik-untuk-preview, supaya data bisa diverifikasi sebelum generate massal
+- **Deteksi Otomatis dari Koordinat** (opsional, berlaku untuk Template 1 & 2): kalau kolom Kota/Alamat/Ketinggian/Suhu/Angin kosong di CSV, tool bisa mengisinya otomatis dari titik Latitude/Longitude — lokasi & alamat lewat reverse geocoding (Esri), ketinggian & cuaca historis lewat Open-Meteo. Semua gratis tanpa API key, opsional (bisa dicentang/tidak), dan tidak pernah menimpa data yang sudah kamu isi manual
 - **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
-- Template 2: deteksi otomatis kota/provinsi/negara + alamat + bendera negara langsung dari koordinat (reverse geocoding), dengan pengaturan zona waktu (GMT offset)
+- Template 2: judul kota/provinsi/negara + bendera negara, dengan pengaturan zona waktu (GMT offset) dan baris info geografis (suhu/angin/ketinggian/arah) opsional
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
 - Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar)
@@ -183,9 +185,10 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 
 - Mode peta Jalan/Satelit butuh koneksi internet aktif selama proses generate; jika jaringan diblokir firewall, gunakan mode Offline atau pastikan domain tile server diizinkan (lihat bagian "Peta Otomatis").
 - Untuk CSV sangat besar (ribuan baris) dengan mode peta online aktif, proses generate akan memakan waktu lebih lama karena menunggu respons server tile satu per satu; tidak ada batas jumlah baris, hanya soal waktu tunggu.
-- Fitur cuaca (weather) belum tersedia — memerlukan API cuaca historis terpisah yang umumnya berbayar/terbatas.
 - Deteksi kolom CSV mengandalkan nama header yang mirip; jika header sangat tidak lazim, kolom bisa tidak terbaca — cek panel "kolom terdeteksi" di bawah upload CSV untuk verifikasi sebelum generate.
-- Template 2 dengan reverse-geocoding otomatis aktif butuh koneksi internet dan lebih lambat untuk CSV berbaris banyak (satu lookup per baris, dengan cache untuk koordinat yang sama/berdekatan); daftar nama+bendera negara yang dikenali belum mencakup seluruh dunia — kode negara yang tidak dikenali tetap tampil tanpa bendera.
+- "Deteksi Otomatis dari Koordinat" (lokasi/alamat/ketinggian/cuaca) butuh koneksi internet dan lebih lambat untuk CSV berbaris banyak (satu lookup per baris yang datanya kosong, dengan cache untuk koordinat yang sama/berdekatan); daftar nama+bendera negara yang dikenali belum mencakup seluruh dunia — kode negara yang tidak dikenali tetap tampil tanpa bendera.
+- Cuaca historis (suhu/angin) dari Open-Meteo hanya tersedia untuk rentang tanggal yang didukung arsipnya (umumnya tidak termasuk beberapa hari paling akhir) — kalau tanggal fotonya di luar rentang itu, tool otomatis coba ambil cuaca hari ini sebagai perkiraan; kalau tetap gagal, baris itu dilewati tanpa menghentikan proses.
+- **Catatan, Kontak, dan Arah/bearing tidak bisa dideteksi otomatis** — Catatan &amp; Kontak adalah data internal (tidak ada sumbernya di internet), dan Arah/bearing adalah arah kamera menghadap saat difoto yang dibaca dari sensor kompas HP saat pemotretan — informasi itu tidak tersimpan di mana pun setelah fotonya jadi, jadi memang harus diisi manual kalau dibutuhkan.
 
 
 ---
@@ -255,4 +258,4 @@ Di beberapa lokasi kerja **restricted** (misalnya area proses/plant pada fasilit
 
 ## Traktir Kopi
 
-Ada tombol "☕ Traktir Kopi" di footer — kalau tool ini bermanfaat, bisa scan QRIS yang muncul di situ. Sepenuhnya opsional.
+Ada tombol "Traktir Kopi" di footer — kalau tool ini bermanfaat, bisa scan QRIS yang muncul di situ. Sepenuhnya opsional. Setelah generate berhasil di Tab 1/2/3, pesan "Selesai!" juga menyertakan ajakan singkat untuk traktir kopi kalau tool-nya membantu pekerjaanmu — tinggal klik teksnya untuk langsung membuka QRIS yang sama.

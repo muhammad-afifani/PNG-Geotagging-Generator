@@ -30,10 +30,15 @@ const DEFAULT_SETTINGS = {
   template: 'classic',  // 'classic' (Template 1) | 'gpscam2' (Template 2)
   gmtOffset: '+08:00',  // GMT offset shown on Template 2's date line
   showTime: false,       // Template 2 only: include time-of-day on the date line
-  autoGeocode: true,     // Template 2 only: auto-detect city/province/country/address from lat+lng
   mapAspect: '1:1',      // Template 2 only: map thumbnail aspect ratio (width:height)
   noteOverride: '',      // Template 2 only: "Note : ..." line for all rows (overrides CSV "note" column)
-  contactOverride: ''    // Template 2 only: contact/phone line for all rows (overrides CSV "phone" column)
+  contactOverride: '',   // Template 2 only: contact/phone line for all rows (overrides CSV "phone" column)
+
+  // "Deteksi Otomatis dari Koordinat" — applies to Template 1 & 2 alike,
+  // only fills in fields the CSV/manual entry left empty:
+  autoGeocode: true,     // fill missing city/address via reverse geocoding
+  autoElevation: false,  // fill missing "Ketinggian" via Open-Meteo elevation
+  autoWeather: false     // fill missing "Suhu"/"Angin" via Open-Meteo weather
 };
 
 function loadSettings() {

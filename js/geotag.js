@@ -163,7 +163,8 @@
       el.progressWrap.classList.add('hidden');
       el.doneMsg.classList.remove('hidden');
       el.doneMsg.innerHTML = `Selesai! <strong>${ok}</strong> foto JPG dengan metadata GPS+tanggal telah diunduh.`
-        + (warn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${warn} foto dilewati (bukan JPG valid).</span>` : '');
+        + (warn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${warn} foto dilewati (bukan JPG valid).</span>` : '')
+        + (window.coffeeCtaHtml ? window.coffeeCtaHtml() : '');
     } catch (err) {
       console.error(err);
       el.progressWrap.classList.add('hidden');
