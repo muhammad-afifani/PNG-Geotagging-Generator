@@ -977,9 +977,18 @@ body { min-height: 100vh; }
   color: #f5a623;
 }
 
-/* ---------- Tab 1: Peta & Kalender Data (Leaflet map + import calendar) ---------- */
-.map-calendar-card { margin-top: 0; }
+/* Tab 1's top section is 3 full-width blocks stacked in plain document
+   flow (Data Foto -> Peta & Kalender -> the two-column settings/preview
+   row) rather than a flex/grid container with a gap, so each needs its
+   own bottom margin — matching the 20px gap used everywhere else
+   (.col, .layout) — or they'd sit flush against each other with only
+   box-shadow bleed suggesting separation (barely visible in light theme). */
+#dataFotoCard,
+.map-calendar-card {
+  margin-bottom: 20px;
+}
 
+/* ---------- Tab 1: Peta & Kalender Data (Leaflet map + import calendar) ---------- */
 .map-calendar-layout {
   display: grid;
   grid-template-columns: 1.4fr 1fr;

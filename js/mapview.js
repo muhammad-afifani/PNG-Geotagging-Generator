@@ -216,6 +216,18 @@
     }
   });
 
+  // Leaflet mis-measures its container while it's display:none, so
+  // nudge it right after the card's own collapse toggle runs (deferred
+  // via setTimeout so it always reads the class AFTER tabs.js's generic
+  // collapse-toggle listener has already flipped it, regardless of
+  // which of the two click listeners on this button fires first).
+  const mcToggleBtn = document.getElementById('mcToggleBtn');
+  if (mcToggleBtn) {
+    mcToggleBtn.addEventListener('click', () => {
+      setTimeout(() => { if (map) map.invalidateSize(); }, 50);
+    });
+  }
+
   window.GeoStamp.onRowsChanged(refresh);
   refresh(); // initial paint (covers reload before any explicit rows-changed event)
 })();
