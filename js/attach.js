@@ -147,12 +147,13 @@
       if (settings.showMap && settings.mapSource !== 'offline') {
         mapImg = await window.GeoStamp.resolveMapForRow(renderRow, settings);
       }
-      // resolve reverse-geocoded location (Template 2 only, same logic as tab 1)
-      let geoResult = null;
-      if (settings.template === 'gpscam2' && settings.autoGeocode) {
-        geoResult = await window.GeoStamp.resolveGeoForRow(renderRow, settings);
+      // resolve "Deteksi Otomatis dari Koordinat" data (geocoding/
+      // elevation/weather; both templates, same logic as tab 1)
+      let autoData = null;
+      if (settings.autoGeocode || settings.autoElevation || settings.autoWeather) {
+        autoData = await window.GeoStamp.resolveAutoDataForRow(renderRow, settings);
       }
-      const opts = window.GeoStamp.buildOverlayOpts(renderRow, { w: canvas.width, h: canvas.height }, settings, mapImg, geoResult);
+      const opts = window.GeoStamp.buildOverlayOpts(renderRow, { w: canvas.width, h: canvas.height }, settings, mapImg, autoData);
       window.GeoStamp.renderOverlay(overlayCanvas, renderRow, opts);
       ctx.drawImage(overlayCanvas, 0, 0);
 
@@ -278,7 +279,8 @@
       el.progressWrap.classList.add('hidden');
       el.doneMsg.classList.remove('hidden');
       el.doneMsg.innerHTML = `Selesai! <strong>${encoded}</strong> foto ter-overlay telah diunduh sebagai ZIP.`
-        + (exifWarn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${exifWarn} foto tidak bisa ditulisi EXIF (bukan JPG).</span>` : '');
+        + (exifWarn ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${exifWarn} foto tidak bisa ditulisi EXIF (bukan JPG).</span>` : '')
+        + (window.coffeeCtaHtml ? window.coffeeCtaHtml() : '');
     } catch (err) {
       console.error(err);
       el.progressWrap.classList.add('hidden');

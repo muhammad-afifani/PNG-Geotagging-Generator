@@ -542,10 +542,14 @@ function renderOverlayClassic(canvas, row, opts) {
 
   let cursorY = boxY + padTop;
 
-  // City / main location line (bold, large)
+  // City / main location line (bold, large) — falls back to the
+  // reverse-geocoded city (opts.geo) when the CSV/manual entry didn't
+  // provide one, so "Deteksi Otomatis dari Koordinat" also benefits
+  // Template 1, not just Template 2.
+  const geo = opts.geo || {};
   const cityFont = Math.round(38 * fontScale);
   ctx.font = `700 ${cityFont}px Inter, Arial, sans-serif`;
-  const cityLine = row.city || row.location || '';
+  const cityLine = row.city || row.location || geo.city || '';
   cursorY += cityFont * 0.85;
   ctx.fillText(truncateToWidth(ctx, cityLine, textAvailW), textStartX, cursorY);
   cursorY += 6 * scale;
@@ -553,8 +557,9 @@ function renderOverlayClassic(canvas, row, opts) {
   // Address (up to 2 lines)
   const bodyFont = Math.round(28 * fontScale);
   ctx.font = `400 ${bodyFont}px Inter, Arial, sans-serif`;
-  if (row.address) {
-    cursorY = drawWrappedTextBaseline(ctx, row.address, textStartX, cursorY, textAvailW, bodyLineH, 2);
+  const addressLine = row.address || geo.address || '';
+  if (addressLine) {
+    cursorY = drawWrappedTextBaseline(ctx, addressLine, textStartX, cursorY, textAvailW, bodyLineH, 2);
   }
 
   // Lat/Lng DMS line
@@ -736,10 +741,18 @@ function renderOverlayTemplate2(canvas, row, opts) {
   const addressText = geo.address || row.address || '';
   const noteText = row.note || '';
   const contactText = row.phone || '';
+  // Manual CSV/form data always wins; "Deteksi Otomatis dari Koordinat"
+  // (opts.weather/opts.elevation) only fills in whatever's missing.
+  // Direction/bearing has no auto source (see index.html hint) — it's
+  // always manual-only.
+  const weather = opts.weather || {};
   const geoItems = [];
-  if (row.temperature) geoItems.push({ icon: 'temp', text: String(row.temperature) });
-  if (row.wind) geoItems.push({ icon: 'wind', text: String(row.wind) });
-  if (row.altitude) geoItems.push({ icon: 'altitude', text: String(row.altitude) });
+  const temperatureVal = row.temperature || weather.temperature;
+  const windVal = row.wind || weather.wind;
+  const altitudeVal = row.altitude || opts.elevation;
+  if (temperatureVal) geoItems.push({ icon: 'temp', text: String(temperatureVal) });
+  if (windVal) geoItems.push({ icon: 'wind', text: String(windVal) });
+  if (altitudeVal) geoItems.push({ icon: 'altitude', text: String(altitudeVal) });
   if (row.direction) geoItems.push({ icon: 'direction', text: String(row.direction) });
 
   // ---- geometry: same floating-card layout as Template 1 (margin,

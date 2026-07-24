@@ -58,6 +58,8 @@
     gmtOffset: document.getElementById('gmtOffset'),
     showTime: document.getElementById('showTime'),
     autoGeocode: document.getElementById('autoGeocode'),
+    autoElevation: document.getElementById('autoElevation'),
+    autoWeather: document.getElementById('autoWeather'),
     mapAspect: document.getElementById('mapAspect'),
     noteOverride: document.getElementById('noteOverride'),
     contactOverride: document.getElementById('contactOverride'),
@@ -141,6 +143,8 @@
     el.gmtOffset.value = s.gmtOffset;
     el.showTime.checked = s.showTime;
     el.autoGeocode.checked = s.autoGeocode;
+    el.autoElevation.checked = s.autoElevation;
+    el.autoWeather.checked = s.autoWeather;
     el.mapAspect.value = s.mapAspect;
     el.noteOverride.value = s.noteOverride || '';
     el.contactOverride.value = s.contactOverride || '';
@@ -183,6 +187,8 @@
       gmtOffset: el.gmtOffset.value,
       showTime: el.showTime.checked,
       autoGeocode: el.autoGeocode.checked,
+      autoElevation: el.autoElevation.checked,
+      autoWeather: el.autoWeather.checked,
       mapAspect: el.mapAspect.value,
       noteOverride: el.noteOverride.value,
       contactOverride: el.contactOverride.value,
@@ -248,11 +254,14 @@
     });
   });
 
-  [el.overlayTemplate, el.gmtOffset, el.showTime, el.autoGeocode, el.mapAspect].forEach(node => {
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect].forEach(node => {
     node.addEventListener('change', () => {
       updateTemplateFieldVisibility();
       onSettingsChanged();
     });
+  });
+  [el.autoGeocode, el.autoElevation, el.autoWeather].forEach(node => {
+    node.addEventListener('change', onSettingsChanged);
   });
   [el.noteOverride, el.contactOverride].forEach(node => node.addEventListener('input', onSettingsChanged));
   [el.customW, el.customH].forEach(node => node.addEventListener('input', onSettingsChanged));
@@ -645,7 +654,7 @@
     }
   }
 
-  // ---------- Template 2 reverse-geocoding ----------
+  // ---------- reverse-geocoding (applies to both templates) ----------
   // Mirrors resolveMapForRow()'s contract exactly: async, network-
   // dependent, timeout-guarded, and NEVER throws or hangs — any
   // failure just resolves to no geo data, and the renderer falls back
@@ -654,8 +663,11 @@
   const FLAG_FETCH_TIMEOUT_MS = 6000;
 
   async function resolveGeoForRow(row, settings) {
-    if (settings.template !== 'gpscam2' || !settings.autoGeocode) return { geo: null, flagImg: null };
+    if (!settings.autoGeocode) return { geo: null, flagImg: null };
     if (isNaN(row.lat) || isNaN(row.lng)) return { geo: null, flagImg: null };
+    // skip the network call entirely if the row already has both a
+    // city/location AND an address — nothing missing to fill in
+    if ((row.city || row.location) && row.address) return { geo: null, flagImg: null };
     try {
       const geo = await reverseGeocode(row.lat, row.lng, GEO_FETCH_TIMEOUT_MS);
       if (!geo) return { geo: null, flagImg: null };
@@ -665,6 +677,52 @@
       console.warn('Reverse geocode failed for row, using manual CSV columns instead:', row.file, err);
       return { geo: null, flagImg: null };
     }
+  }
+
+  // ---------- elevation + weather (Open-Meteo, Template 2's Geo Info row) ----------
+  const ELEVATION_FETCH_TIMEOUT_MS = 6000;
+  const WEATHER_FETCH_TIMEOUT_MS = 7000;
+
+  async function resolveElevationForRow(row, settings) {
+    if (!settings.autoElevation) return null;
+    if (row.altitude) return null; // already filled manually/CSV
+    if (isNaN(row.lat) || isNaN(row.lng)) return null;
+    try {
+      const meters = await fetchElevation(row.lat, row.lng, ELEVATION_FETCH_TIMEOUT_MS);
+      return meters != null ? `${meters} m` : null;
+    } catch (err) {
+      console.warn('Elevation lookup failed for row:', row.file, err);
+      return null;
+    }
+  }
+
+  async function resolveWeatherForRow(row, settings) {
+    if (!settings.autoWeather) return null;
+    if (row.temperature && row.wind) return null; // nothing missing to fill
+    if (isNaN(row.lat) || isNaN(row.lng)) return null;
+    try {
+      const d = parseFlexibleDate(row.date);
+      const isoDate = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null;
+      return await fetchWeather(row.lat, row.lng, isoDate, WEATHER_FETCH_TIMEOUT_MS);
+    } catch (err) {
+      console.warn('Weather lookup failed for row:', row.file, err);
+      return null;
+    }
+  }
+
+  /**
+   * Combined resolver for everything under "Deteksi Otomatis dari
+   * Koordinat" — runs geocoding/elevation/weather in parallel (each
+   * independently timeout-guarded and skip-if-already-filled) and
+   * returns one bundle for buildOverlayOpts.
+   */
+  async function resolveAutoDataForRow(row, settings) {
+    const [geoResult, elevation, weather] = await Promise.all([
+      resolveGeoForRow(row, settings),
+      resolveElevationForRow(row, settings),
+      resolveWeatherForRow(row, settings)
+    ]);
+    return { geo: geoResult.geo, flagImg: geoResult.flagImg, elevation, weather };
   }
 
   // ---------- preview ----------
@@ -689,14 +747,14 @@
     el.previewRowTag.textContent = `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length} — ${row.file}`;
 
     const needsMap = settingsSnapshot.showMap && settingsSnapshot.mapSource !== 'offline';
-    const needsGeo = settingsSnapshot.template === 'gpscam2' && settingsSnapshot.autoGeocode;
-    if (needsMap || needsGeo) {
-      const [mapCanvas, geoResult] = await Promise.all([
+    const needsAuto = settingsSnapshot.autoGeocode || settingsSnapshot.autoElevation || settingsSnapshot.autoWeather;
+    if (needsMap || needsAuto) {
+      const [mapCanvas, autoData] = await Promise.all([
         needsMap ? resolveMapForRow(row, settingsSnapshot) : Promise.resolve(null),
-        needsGeo ? resolveGeoForRow(row, settingsSnapshot) : Promise.resolve({ geo: null, flagImg: null })
+        needsAuto ? resolveAutoDataForRow(row, settingsSnapshot) : Promise.resolve(null)
       ]);
       if (myRequestId !== previewRequestId) return; // a newer preview request superseded this one
-      renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, mapCanvas, geoResult));
+      renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, mapCanvas, autoData));
     }
   }
 
@@ -718,7 +776,7 @@
     return next;
   }
 
-  function buildOverlayOpts(row, dims, settings, mapCanvas, geoResult) {
+  function buildOverlayOpts(row, dims, settings, mapCanvas, autoData) {
     return {
       template: settings.template,
       logoImg: state.logoImg,
@@ -741,8 +799,10 @@
       gmtOffset: settings.gmtOffset,
       showTime: settings.showTime,
       mapAspect: settings.mapAspect,
-      geo: geoResult ? geoResult.geo : null,
-      countryFlagImg: geoResult ? geoResult.flagImg : null
+      geo: autoData ? autoData.geo : null,
+      countryFlagImg: autoData ? autoData.flagImg : null,
+      elevation: autoData ? autoData.elevation : null,
+      weather: autoData ? autoData.weather : null
     };
   }
 
@@ -887,7 +947,7 @@
     let mapFailCount = 0;
     let renderFailCount = 0;
     let geoFailCount = 0;
-    const needsGeo = settingsSnapshot.template === 'gpscam2' && settingsSnapshot.autoGeocode;
+    const needsAuto = settingsSnapshot.autoGeocode || settingsSnapshot.autoElevation || settingsSnapshot.autoWeather;
 
     for (let i = 0; i < total; i++) {
       const row = state.rows[i];
@@ -899,18 +959,19 @@
         if (!mapCanvas) mapFailCount++;
       }
 
-      // 1b) resolve reverse-geocoded location for this row (Template 2
-      // only; same timeout-guarded, never-hangs contract as the map)
-      let geoResult = null;
-      if (needsGeo) {
-        geoResult = await resolveGeoForRow(row, settingsSnapshot);
-        if (!geoResult.geo) geoFailCount++;
+      // 1b) resolve "Deteksi Otomatis dari Koordinat" data for this row
+      // (geocoding/elevation/weather; same timeout-guarded, never-hangs
+      // contract as the map)
+      let autoData = null;
+      if (needsAuto) {
+        autoData = await resolveAutoDataForRow(row, settingsSnapshot);
+        if (settingsSnapshot.autoGeocode && !autoData.geo && !((row.city || row.location) && row.address)) geoFailCount++;
       }
 
       // 2) render the overlay (synchronous, fast, cannot hang)
       try {
         const renderRow = applyProjectOverride(row, settingsSnapshot);
-        renderOverlay(workCanvas, renderRow, buildOverlayOpts(renderRow, dims, settingsSnapshot, mapCanvas, geoResult));
+        renderOverlay(workCanvas, renderRow, buildOverlayOpts(renderRow, dims, settingsSnapshot, mapCanvas, autoData));
       } catch (err) {
         console.error('Render failed for row', row.file, err);
         renderFailCount++;
@@ -983,10 +1044,11 @@
     if (renderFailCount > 0) {
       extraMsg += ` ${renderFailCount} baris mengalami masalah saat render/encode.`;
     }
-    if (needsGeo && geoFailCount > 0) {
+    if (settingsSnapshot.autoGeocode && geoFailCount > 0) {
       extraMsg += ` ${geoFailCount} baris gagal deteksi lokasi otomatis, memakai kolom Lokasi/Alamat dari CSV sebagai gantinya.`;
     }
-    el.doneMsg.innerHTML = `Selesai! ZIP berisi <strong>${total}</strong> file PNG telah diunduh.${extraMsg ? '<br><span style="color:var(--text-dim);font-size:11.5px;">' + extraMsg.trim() + '</span>' : ''}`;
+    el.doneMsg.innerHTML = `Selesai! ZIP berisi <strong>${total}</strong> file PNG telah diunduh.${extraMsg ? '<br><span style="color:var(--text-dim);font-size:11.5px;">' + extraMsg.trim() + '</span>' : ''}`
+      + (window.coffeeCtaHtml ? window.coffeeCtaHtml() : '');
   }
 
   function updateProgress(done, total, etaMs) {
@@ -1020,10 +1082,11 @@
     getLogo: () => state.logoImg,
     getSettings: () => ({ ...state.settings }),
     getDims: () => getCanvasDims(state.settings),
-    buildOverlayOpts: (row, dims, settings, mapImg) => buildOverlayOpts(row, dims, settings, mapImg),
+    buildOverlayOpts: (row, dims, settings, mapImg, autoData) => buildOverlayOpts(row, dims, settings, mapImg, autoData),
     applyProjectOverride: (row, settings) => applyProjectOverride(row, settings),
     resolveMapForRow: (row, settings) => resolveMapForRow(row, settings),
     resolveGeoForRow: (row, settings) => resolveGeoForRow(row, settings),
+    resolveAutoDataForRow: (row, settings) => resolveAutoDataForRow(row, settings),
     renderOverlay: (canvas, row, opts) => renderOverlay(canvas, row, opts),
     sanitizeFilename: (s) => sanitizeFilename(s),
     timestampSlug: () => timestampSlug()
