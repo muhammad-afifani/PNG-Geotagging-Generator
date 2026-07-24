@@ -51,7 +51,7 @@
       <div class="guide-flow">
         <p class="guide-flow-title">Alur pakai (baca ini dulu sebelum mulai):</p>
         <ol class="guide-steps">
-          <li><strong>Mulai di Tab 1 — Overlay PNG.</strong> Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi) lalu atur tampilan overlay di sini. <u>CSV, logo, dan semua pengaturan yang kamu atur di Tab 1 otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload ulang.</li>
+          <li><strong>Mulai di Tab 1 — Overlay PNG.</strong> Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), atau kalau cuma mau tes beberapa foto pakai mode Input Manual, lalu atur tampilan overlay di sini. <u>Data, logo, dan semua pengaturan yang kamu atur di Tab 1 otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
           <li><strong>Tab 2 — Tempel ke Foto</strong> dipakai kalau kamu mau overlay langsung "dibakar" ke foto asli (upload foto di sini, datanya diambil dari CSV Tab 1).</li>
           <li><strong>Tab 3 — Geotag Metadata</strong> dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF foto JPG, tanpa watermark terlihat.</li>
         </ol>
@@ -65,7 +65,7 @@
   <nav class="tabnav" role="tablist">
     <button class="tab-btn active" data-tab="tab-overlay" role="tab">
       <span class="tab-btn-title">1 · Overlay PNG</span>
-      <span class="tab-btn-sub">Upload CSV di sini dulu</span>
+      <span class="tab-btn-sub">Isi data foto di sini dulu</span>
     </button>
     <button class="tab-btn" data-tab="tab-attach" role="tab">
       <span class="tab-btn-title">2 · Tempel ke Foto</span>
@@ -84,24 +84,127 @@
     <!-- ============ LEFT COLUMN : INPUTS ============ -->
     <div class="col col-left">
 
-      <!-- STEP 1 : CSV -->
+      <!-- STEP 1 : DATA (CSV or manual) -->
       <section class="card">
         <div class="card-head">
           <span class="step-badge">1</span>
-          <h2>Upload CSV</h2>
+          <h2>Data Foto</h2>
         </div>
-        <div id="dropZone" class="dropzone">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p><strong>Drag &amp; drop CSV</strong> di sini, atau klik untuk memilih file</p>
-          <input type="file" id="csvInput" accept=".csv" hidden>
+
+        <div class="mode-toggle">
+          <label class="radio-pill">
+            <input type="radio" name="dataInputMode" value="csv" checked>
+            <span>Upload CSV</span>
+          </label>
+          <label class="radio-pill">
+            <input type="radio" name="dataInputMode" value="manual">
+            <span>Input Manual (satu-satu)</span>
+          </label>
         </div>
-        <div id="csvInfo" class="file-info hidden"></div>
-        <div id="csvColMap" class="colmap hidden"></div>
-        <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
-        <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
+
+        <div id="csvModePanel">
+          <div id="dropZone" class="dropzone">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p><strong>Drag &amp; drop CSV</strong> di sini, atau klik untuk memilih file</p>
+            <input type="file" id="csvInput" accept=".csv" hidden>
+          </div>
+          <div id="csvInfo" class="file-info hidden"></div>
+          <div id="csvColMap" class="colmap hidden"></div>
+          <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
+          <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
+        </div>
+
+        <div id="manualModePanel" class="hidden">
+          <p class="hint" style="margin-top:0;">Cocok untuk tes cepat 1–5 foto tanpa perlu bikin file CSV. Isi form, klik "Tambah Baris", ulangi untuk foto berikutnya — semuanya masuk ke daftar Preview Data di bawah.</p>
+          <div class="manual-fields">
+            <div class="field">
+              <label for="manualFile">Nama File</label>
+              <input type="text" id="manualFile" placeholder="IMG_0001">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="manualLat">Latitude</label>
+                <input type="text" id="manualLat" placeholder="-0.664651">
+              </div>
+              <div class="field">
+                <label for="manualLng">Longitude</label>
+                <input type="text" id="manualLng" placeholder="117.264083">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="manualDate">Tanggal</label>
+                <input type="date" id="manualDate">
+              </div>
+              <div class="field">
+                <label for="manualTime">Waktu</label>
+                <input type="time" id="manualTime">
+              </div>
+            </div>
+            <div class="field">
+              <label for="manualLocation">Lokasi / Project Name</label>
+              <input type="text" id="manualLocation" placeholder="Kutai Kartanegara Kalimantan Timur">
+            </div>
+            <div class="field">
+              <label for="manualAddress">Alamat</label>
+              <input type="text" id="manualAddress" placeholder="Jl. Contoh No.1, Kecamatan, Kota">
+            </div>
+
+            <div class="settings-subhead" style="grid-column:1/-1;">Field Tambahan (opsional, untuk Template 2)</div>
+            <div class="field-row">
+              <div class="field">
+                <label for="manualNote">Catatan</label>
+                <input type="text" id="manualNote" placeholder="Kosongkan jika tidak perlu">
+              </div>
+              <div class="field">
+                <label for="manualPhone">Kontak</label>
+                <input type="text" id="manualPhone" placeholder="+62 812-...">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="manualTemperature">Suhu</label>
+                <input type="text" id="manualTemperature" placeholder="21 C">
+              </div>
+              <div class="field">
+                <label for="manualWind">Angin</label>
+                <input type="text" id="manualWind" placeholder="25 km/h">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="manualAltitude">Ketinggian</label>
+                <input type="text" id="manualAltitude" placeholder="22 m">
+              </div>
+              <div class="field">
+                <label for="manualDirection">Arah</label>
+                <input type="text" id="manualDirection" placeholder="165 S">
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" id="addManualRowBtn" type="button" style="margin-top:14px;">+ Tambah Baris</button>
+        </div>
+
+        <div id="dataPreviewSection" class="data-preview hidden">
+          <div class="data-preview-head">
+            <h3>Preview Data <span id="dataPreviewCount" class="preview-tag"></span></h3>
+            <button class="btn btn-tiny" id="clearRowsBtn" type="button">Kosongkan Semua</button>
+          </div>
+          <p class="hint" style="margin-top:0;">Klik satu baris untuk lihat preview overlay-nya di panel kanan. Cek dulu datanya benar sebelum generate.</p>
+          <div class="data-preview-table-wrap">
+            <table class="data-preview-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Nama File</th><th>Lat</th><th>Long</th><th>Tanggal</th><th>Waktu</th><th>Lokasi</th><th>Alamat</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="dataPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- STEP 2 : LOGO -->
@@ -368,7 +471,7 @@
         <div class="preview-canvas-wrap">
           <canvas id="previewCanvas"></canvas>
           <div id="previewEmpty" class="preview-empty">
-            <p>Upload CSV untuk melihat preview overlay</p>
+            <p>Upload CSV atau tambah baris manual untuk melihat preview overlay</p>
           </div>
         </div>
         <div class="preview-controls">
@@ -383,7 +486,7 @@
           <h2>Generate</h2>
         </div>
         <div class="generate-stats" id="generateStats">
-          <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-label">baris CSV</span></div>
+          <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-label">baris data</span></div>
         </div>
         <button class="btn btn-primary btn-generate" id="generateBtn" type="button" disabled>
           Generate &amp; Download ZIP
@@ -424,7 +527,7 @@
             <input type="file" id="attachInput" accept="image/jpeg,image/jpg,image/png" multiple hidden>
           </div>
           <div id="attachFileInfo" class="file-info hidden"></div>
-          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris CSV (dari tab 1) berdasarkan urutan, atau berdasarkan nama file jika cocok.</p>
+          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris data (dari Tab 1, CSV maupun input manual) berdasarkan urutan, atau berdasarkan nama file jika cocok.</p>
         </section>
 
         <section class="card">
@@ -497,7 +600,7 @@
           <div class="card-head"><h2>Proses &amp; Download</h2></div>
           <div class="gen-stats">
             <div class="stat"><span class="stat-num" id="attachStatPhotos">0</span><span class="stat-label">foto</span></div>
-            <div class="stat"><span class="stat-num" id="attachStatRows">0</span><span class="stat-label">baris CSV</span></div>
+            <div class="stat"><span class="stat-num" id="attachStatRows">0</span><span class="stat-label">baris data</span></div>
           </div>
           <button class="btn btn-primary btn-block" id="attachGenerateBtn" type="button" disabled>Tempel Overlay &amp; Download ZIP</button>
           <div id="attachProgressWrap" class="progress-wrap hidden">

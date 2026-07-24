@@ -22,13 +22,16 @@ Aplikasi web 100% client-side (tanpa backend, tanpa server, tanpa Node/PHP/Pytho
 
 ## Alur Penggunaan
 
-1. **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Upload CSV, isi datamu mengikuti format itu, lalu upload.
+1. **Isi data foto** — dua cara, bisa dipakai gantian atau digabung:
+   - **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Data Foto, isi datamu mengikuti format itu, lalu upload.
+   - **Input Manual (satu-satu)** — pilih mode ini kalau cuma mau tes cepat 1–5 foto tanpa bikin file CSV dulu. Isi form (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat, plus field opsional untuk Template 2), klik **"+ Tambah Baris"**, ulangi untuk foto berikutnya. Baris manual ikut ditambahkan ke baris yang sudah ada dari CSV (kalau ada) — dua-duanya bisa digabung.
+   - Setelah data masuk (dari cara manapun), cek tabel **Preview Data** yang muncul di bawahnya — semua baris ditampilkan lengkap dengan tombol hapus per baris, dan klik satu baris untuk langsung melihat preview overlay-nya di panel kanan. Ini supaya kamu bisa pastikan data yang dimasukkan sudah benar sebelum generate massal.
 2. **(Opsional) Upload logo** — Mode A pakai logo bawaan (embedded), Mode B upload PNG sendiri.
 3. **Atur pengaturan overlay** — resolusi, format tanggal, posisi, opacity, warna & ukuran font, sumber peta, dll.
 4. **Preview** — cek tampilan overlay per baris sebelum generate massal.
 5. **Generate & Download ZIP** — semua PNG dibuat secara batch/asynchronous lalu otomatis di-download sebagai satu file ZIP.
 
-> **Penting:** CSV, logo, dan semua pengaturan overlay yang kamu atur di **Tab 1** dipakai bersama oleh **Tab 2 (Tempel ke Foto)** dan **Tab 3 (Geotag Metadata)** — tidak perlu upload ulang CSV di tab lain. Urutan ini (dan alasan tool ini dibuat) juga dijelaskan di banner panduan yang muncul otomatis di bagian atas halaman saat pertama kali dibuka (bisa ditutup/dibuka lagi lewat tombol "📖 Panduan" di header).
+> **Penting:** Data (CSV maupun input manual), logo, dan semua pengaturan overlay yang kamu atur di **Tab 1** dipakai bersama oleh **Tab 2 (Tempel ke Foto)** dan **Tab 3 (Geotag Metadata)** — tidak perlu mengisi ulang di tab lain. Urutan ini (dan alasan tool ini dibuat) juga dijelaskan di banner panduan yang muncul otomatis di bagian atas halaman saat pertama kali dibuka (bisa dibuka/tutup lewat baris "Panduan Cara Pakai" di atas tab).
 
 ---
 
@@ -160,6 +163,8 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 
 ## Fitur Utama
 
+- **Input data fleksibel**: upload CSV untuk banyak baris sekaligus, atau **Input Manual (satu-satu)** untuk tes cepat 1–5 foto tanpa perlu bikin file CSV — keduanya bisa digabung
+- **Preview Data**: tabel yang menampilkan semua baris yang sudah dimasukkan (dari CSV maupun manual), dengan tombol hapus per baris dan klik-untuk-preview, supaya data bisa diverifikasi sebelum generate massal
 - **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
 - Template 2: deteksi otomatis kota/provinsi/negara + alamat + bendera negara langsung dari koordinat (reverse geocoding), dengan pengaturan zona waktu (GMT offset)
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
