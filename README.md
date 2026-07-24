@@ -103,10 +103,14 @@ js/
   csv.js        -> parsing CSV + auto-deteksi kolom
   settings.js   -> LocalStorage + export/import preset JSON
   main.js       -> controller UI, preview, batching & ZIP generation
+  mapview.js    -> peta interaktif (Leaflet) + kalender tanggal import di Tab 1
+  csvbuilder.js -> Tab 4, tool ekstraksi nama file/tanggal dari foto (berdiri sendiri)
 libs/
   papaparse.min.js
   jszip.min.js
   FileSaver.min.js
+  piexif.min.js
+  leaflet/leaflet.js, leaflet.css, images/  -> peta interaktif di Tab 1 (MIT license)
 assets/
   logo-default.png     -> logo bawaan (Mode A)
   placeholder-map.png  -> aset cadangan (peta placeholder utamanya digambar via Canvas)
@@ -168,6 +172,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 
 - **Input data fleksibel**: upload CSV untuk banyak baris sekaligus, atau **Input Manual (satu-satu)** untuk tes cepat 1–5 foto tanpa perlu bikin file CSV — keduanya bisa digabung
 - **Preview Data**: tabel yang menampilkan semua baris yang sudah dimasukkan (dari CSV maupun manual), dengan tombol hapus per baris dan klik-untuk-preview, supaya data bisa diverifikasi sebelum generate massal
+- **Peta & Kalender Data**: peta interaktif (Jalan/Satelit) menampilkan semua titik yang sudah diimport, dengan pin yang bisa digeser untuk mengoreksi koordinat langsung (otomatis update ke data & preview watermark), plus kalender yang menyorot tanggal-tanggal yang sudah ada datanya
 - **Deteksi Otomatis dari Koordinat** (opsional, berlaku untuk Template 1 & 2): kalau kolom Kota/Alamat/Ketinggian/Suhu/Angin kosong di CSV, tool bisa mengisinya otomatis dari titik Latitude/Longitude — lokasi & alamat lewat reverse geocoding (Esri), ketinggian & cuaca historis lewat Open-Meteo. Semua gratis tanpa API key, opsional (bisa dicentang/tidak), dan tidak pernah menimpa data yang sudah kamu isi manual
 - **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
 - Template 1 & 2: judul kota/provinsi/negara + bendera negara, dengan baris info geografis (suhu/angin/ketinggian/arah) opsional memakai ikon berwarna (bukan hitam-putih)
@@ -193,6 +198,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - "Deteksi Otomatis dari Koordinat" (lokasi/alamat/ketinggian/cuaca) butuh koneksi internet dan lebih lambat untuk CSV berbaris banyak (satu lookup per baris yang datanya kosong, dengan cache untuk koordinat yang sama/berdekatan); daftar nama+bendera negara yang dikenali belum mencakup seluruh dunia — kode negara yang tidak dikenali tetap tampil tanpa bendera.
 - Cuaca historis (suhu/angin) dari Open-Meteo hanya tersedia untuk rentang tanggal yang didukung arsipnya (umumnya tidak termasuk beberapa hari paling akhir) — kalau tanggal fotonya di luar rentang itu, tool otomatis coba ambil cuaca hari ini sebagai perkiraan; kalau tetap gagal, baris itu dilewati tanpa menghentikan proses.
 - **Catatan, Kontak, dan Arah/bearing tidak bisa dideteksi otomatis** — Catatan &amp; Kontak adalah data internal (tidak ada sumbernya di internet), dan Arah/bearing adalah arah kamera menghadap saat difoto yang dibaca dari sensor kompas HP saat pemotretan — informasi itu tidak tersimpan di mana pun setelah fotonya jadi, jadi memang harus diisi manual kalau dibutuhkan.
+- Peta interaktif di kartu "Peta & Kalender Data" juga butuh koneksi internet untuk memuat gambar tile Jalan/Satelit (sama seperti mode peta di pengaturan overlay); tanpa internet, pin/drag-koordinat dan kalender tetap berfungsi normal, hanya latar peta yang kosong.
 
 
 ---
@@ -228,8 +234,17 @@ Jika halaman masih tampil tanpa styling setelah `.nojekyll` ditambahkan, coba ha
 
 Aplikasi sekarang punya 4 tab dengan tujuan berbeda:
 
-### Tab 1 — Overlay PNG (fitur asli)
-Generate watermark PNG transparan dari CSV, seperti sebelumnya.
+### Tab 1 — Watermark GPS (fitur asli, sebelumnya bernama "Overlay PNG")
+Generate watermark PNG transparan dari CSV, seperti sebelumnya. Titik mulai semua tab lain — data, logo, dan pengaturan yang diisi di sini dipakai bersama oleh Tab 2 & Tab 3.
+
+#### Peta & Kalender Data
+
+Setelah data diisi (CSV atau Input Manual), Tab 1 menampilkan kartu **"Peta & Kalender Data"** di bagian bawah:
+
+- **Peta interaktif** (pakai [Leaflet](https://leafletjs.com/), library gratis & open-source, dibundel lokal di `libs/leaflet/` — bukan lewat CDN) menampilkan setiap baris yang punya Latitude/Longitude valid sebagai pin. Kontrol di pojok kanan-atas peta bisa ganti tampilan antara **Jalan** dan **Satelit** (sumber tile sama dengan yang dipakai untuk thumbnail peta di watermark — Esri, gratis tanpa API key).
+- **Geser pin untuk koreksi koordinat** — pin di peta ini bisa di-drag. Melepas pin di posisi baru langsung menimpa nilai Latitude/Longitude baris tersebut, dan otomatis ter-refleksi ke tabel Preview Data serta ke canvas Preview watermark (kalau baris itu sedang jadi contoh yang ditampilkan) — jadi tidak perlu edit CSV manual kalau cuma mau menggeser titik sedikit.
+- **Kalender** di sebelah peta menyorot tanggal mana saja yang punya data (dihitung dari kolom Tanggal tiap baris, terlepas dari valid-tidaknya koordinat), dengan jumlah foto per tanggal. Klik satu tanggal untuk menyorot titik-titik pada tanggal itu di peta (titik lain jadi transparan) dan menampilkan daftar nama filenya; klik lagi (atau tombol "Tampilkan Semua") untuk membatalkan filter.
+- Butuh koneksi internet untuk memuat gambar peta (tile Jalan/Satelit); tanpa internet peta tetap berfungsi untuk drag-koordinat dan kalender, hanya tampilan tile-nya kosong.
 
 ### Tab 2 — Tempel ke Foto
 Alih-alih PNG transparan terpisah, overlay langsung "dibakar" ke foto asli kamu. Upload foto (banyak sekaligus / satu folder), foto dipasangkan otomatis dengan baris CSV (dari Tab 1) berdasarkan nama file atau urutan. Ada opsi:
