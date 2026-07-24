@@ -120,7 +120,7 @@ README.md
 Tab 1 punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay", supaya beberapa gaya watermark bisa dipakai tanpa saling menimpa pengaturan satu sama lain. Menambah Template 3 dan seterusnya di masa depan tidak akan mengubah Template 1/2 yang sudah ada.
 
 ### Template 1 — Klasik
-Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`).
+Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`). Sama seperti Template 2, judul kota juga menampilkan bendera negara kalau "Deteksi Otomatis dari Koordinat" aktif.
 
 ### Template 2 — GPS Map Camera
 Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari tampilan watermark asli aplikasi GPS Map Camera. Sama seperti Template 1: kartu mengambang dengan sudut membulat dan badge logo menempel di pojok kanan-atas kotak teks (keluar/nongol di ujung, persis mekanisme Template 1) — bedanya ada baris data yang lebih lengkap:
@@ -130,12 +130,14 @@ Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dar
 - Baris tanggal + jam (opsional) + zona waktu: `Thursday, 20/03/2025 GMT+08:00`
 - **Note** (opsional): `Note : <teks bebas>`
 - **Kontak** (opsional): nomor telepon/kontak dengan ikon telepon
-- **Info geografis** (opsional): suhu, kecepatan angin, ketinggian, dan arah/bearing — masing-masing dengan ikon sendiri (matahari, angin, gunung, kompas), tampil berjejer hanya untuk field yang ada datanya
+- **Info geografis** (opsional): suhu, kecepatan angin, ketinggian, dan arah/bearing — masing-masing dengan **ikon berwarna** sendiri (matahari kuning, angin biru, gunung merah, kompas ungu), tampil berjejer hanya untuk field yang ada datanya
 
 Pengaturan khusus Template 2 (muncul otomatis saat template ini dipilih):
 - **Zona Waktu (GMT Offset)** — dropdown WIB/WITA/WIT plus offset umum lainnya, ditulis di baris tanggal.
 - **Rasio Peta** — 1:1 / 4:3 / 3:4 / 16:9 / 9:16. Thumbnail peta di-crop (bukan di-stretch) dari grid tile yang sama, jadi bentuknya berubah sesuai rasio tanpa gambar jadi gepeng/molor.
+- **Bahasa Watermark** — English (default) atau Indonesia. Mode Indonesia menerjemahkan nama hari (Monday → Senin) dan notasi lintang/bujur pada baris koordinat desimal (`LU`/`LS` untuk lintang, `BT`/`BB` untuk bujur, menggantikan `N`/`S`/`E`/`W`).
 - **Tampilkan jam di baris tanggal** — opsional, default mati.
+- **Ukuran Font** kini murni mengubah ukuran teks — tidak lagi ikut memperbesar/memperkecil ukuran kartu (sebelumnya kartu ikut membesar mengikuti setelan font, sudah diperbaiki).
 - **Deteksi otomatis lokasi & alamat dari koordinat (reverse geocoding)** — aktif secara default. Saat aktif, judul (kota/provinsi/negara + bendera) dan baris alamat **otomatis dihitung dari Latitude/Longitude tiap baris**, tidak perlu mengisi kolom Lokasi/Alamat di CSV secara manual. Prosesnya:
   - Menggunakan layanan reverse-geocoding gratis & tanpa API key dari Esri (`geocode.arcgis.com`) — vendor yang sama dengan yang sudah dipakai untuk tile peta, dipilih dengan alasan yang sama: layanan geocoding OpenStreetMap (Nominatim) secara eksplisit melarang pemakaian otomatis/massal tanpa izin, sedangkan endpoint anonim Esri tidak membawa pembatasan itu untuk pemakaian ringan seperti ini.
   - Bendera negara diambil dari `flagcdn.com` (gratis, tanpa API key).
@@ -168,7 +170,9 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - **Preview Data**: tabel yang menampilkan semua baris yang sudah dimasukkan (dari CSV maupun manual), dengan tombol hapus per baris dan klik-untuk-preview, supaya data bisa diverifikasi sebelum generate massal
 - **Deteksi Otomatis dari Koordinat** (opsional, berlaku untuk Template 1 & 2): kalau kolom Kota/Alamat/Ketinggian/Suhu/Angin kosong di CSV, tool bisa mengisinya otomatis dari titik Latitude/Longitude — lokasi & alamat lewat reverse geocoding (Esri), ketinggian & cuaca historis lewat Open-Meteo. Semua gratis tanpa API key, opsional (bisa dicentang/tidak), dan tidak pernah menimpa data yang sudah kamu isi manual
 - **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
-- Template 2: judul kota/provinsi/negara + bendera negara, dengan pengaturan zona waktu (GMT offset) dan baris info geografis (suhu/angin/ketinggian/arah) opsional
+- Template 1 & 2: judul kota/provinsi/negara + bendera negara, dengan baris info geografis (suhu/angin/ketinggian/arah) opsional memakai ikon berwarna (bukan hitam-putih)
+- Template 2: opsi **Bahasa Watermark** (English / Indonesia) untuk nama hari dan notasi lintang-bujur (LU/LS/BT/BB)
+- **Tab 4 — Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam dari sekumpulan foto (EXIF atau file system), dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
 - Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar)
@@ -220,9 +224,9 @@ Jika halaman masih tampil tanpa styling setelah `.nojekyll` ditambahkan, coba ha
 
 ---
 
-## Fitur Baru: 3-Tab Workflow
+## Fitur Baru: 4-Tab Workflow
 
-Aplikasi sekarang punya 3 tab dengan tujuan berbeda:
+Aplikasi sekarang punya 4 tab dengan tujuan berbeda:
 
 ### Tab 1 — Overlay PNG (fitur asli)
 Generate watermark PNG transparan dari CSV, seperti sebelumnya.
@@ -251,6 +255,20 @@ Selain GPS + tanggal/waktu, Tab 3 sekarang punya field opsional yang juga dituli
 | Instansi / Perusahaan | `0th.Copyright` |
 
 Semua field ini opsional — dikosongkan berarti tidak ditulis. Verifikasi hasilnya sama seperti GPS: klik-kanan foto → Properties → Details (Windows), atau lewat situs pengecek EXIF.
+
+### Tab 4 — Buat CSV dari Foto
+
+Tool kecil yang **berdiri sendiri**, terpisah dari data/pengaturan Tab 1–3 — tidak berbagi apa pun dengan tab lain. Dibuat untuk kasus foto dokumentasi yang tanggal/jam pemotretannya sudah hilang atau salah, sehingga perlu dikoreksi manual sebelum dipakai sebagai CSV di Tab 1.
+
+Cara pakai:
+1. Klik **"Atau Pilih Folder Langsung"** untuk memilih seluruh folder foto sekaligus, atau drag & drop / pilih file satu-satu.
+2. Untuk tiap foto, tanggal & jam diambil otomatis:
+   - Dari metadata **EXIF** (`DateTimeOriginal`) kalau filenya JPG dan datanya ada — ditandai badge hijau **EXIF**.
+   - Kalau tidak ada (bukan JPG, atau EXIF-nya kosong/hilang), fallback ke **tanggal terakhir file dimodifikasi** di file system — ditandai badge kuning **File System**, karena ini cuma perkiraan, bukan waktu pemotretan asli.
+3. Tabel hasil ekstraksi **bisa diedit langsung** — klik kolom Tanggal/Waktu tiap baris untuk mengoreksi manual, terutama baris bertanda "File System".
+4. Klik **Download CSV** untuk mengunduh hasilnya — kolom CSV sama persis dengan format Tab 1 (`Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat`), dengan Latitude/Longitude/Lokasi/Alamat sengaja dikosongkan untuk diisi manual (lewat Excel/Google Sheets, atau lewat "Deteksi Otomatis dari Koordinat" di Tab 1 kalau koordinatnya sudah diisi).
+
+Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto tidak pernah diunggah ke mana pun.
 
 ## Kenapa Tool Ini Dibuat
 

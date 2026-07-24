@@ -61,6 +61,7 @@
     autoElevation: document.getElementById('autoElevation'),
     autoWeather: document.getElementById('autoWeather'),
     mapAspect: document.getElementById('mapAspect'),
+    watermarkLang: document.getElementById('watermarkLang'),
     noteOverride: document.getElementById('noteOverride'),
     contactOverride: document.getElementById('contactOverride'),
 
@@ -146,6 +147,7 @@
     el.autoElevation.checked = s.autoElevation;
     el.autoWeather.checked = s.autoWeather;
     el.mapAspect.value = s.mapAspect;
+    el.watermarkLang.value = s.watermarkLang;
     el.noteOverride.value = s.noteOverride || '';
     el.contactOverride.value = s.contactOverride || '';
     updateTemplateFieldVisibility();
@@ -190,6 +192,7 @@
       autoElevation: el.autoElevation.checked,
       autoWeather: el.autoWeather.checked,
       mapAspect: el.mapAspect.value,
+      watermarkLang: el.watermarkLang.value,
       noteOverride: el.noteOverride.value,
       contactOverride: el.contactOverride.value,
 
@@ -254,7 +257,7 @@
     });
   });
 
-  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect].forEach(node => {
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect, el.watermarkLang].forEach(node => {
     node.addEventListener('change', () => {
       updateTemplateFieldVisibility();
       onSettingsChanged();
@@ -665,9 +668,10 @@
   async function resolveGeoForRow(row, settings) {
     if (!settings.autoGeocode) return { geo: null, flagImg: null };
     if (isNaN(row.lat) || isNaN(row.lng)) return { geo: null, flagImg: null };
-    // skip the network call entirely if the row already has both a
-    // city/location AND an address — nothing missing to fill in
-    if ((row.city || row.location) && row.address) return { geo: null, flagImg: null };
+    // (always fetch when enabled, even if city/address are already
+    // filled in manually — the country flag has no other source, so
+    // skipping here would mean the flag never shows for CSVs that
+    // already provide their own city/address text)
     try {
       const geo = await reverseGeocode(row.lat, row.lng, GEO_FETCH_TIMEOUT_MS);
       if (!geo) return { geo: null, flagImg: null };
@@ -799,6 +803,7 @@
       gmtOffset: settings.gmtOffset,
       showTime: settings.showTime,
       mapAspect: settings.mapAspect,
+      watermarkLang: settings.watermarkLang,
       geo: autoData ? autoData.geo : null,
       countryFlagImg: autoData ? autoData.flagImg : null,
       elevation: autoData ? autoData.elevation : null,
@@ -965,7 +970,7 @@
       let autoData = null;
       if (needsAuto) {
         autoData = await resolveAutoDataForRow(row, settingsSnapshot);
-        if (settingsSnapshot.autoGeocode && !autoData.geo && !((row.city || row.location) && row.address)) geoFailCount++;
+        if (settingsSnapshot.autoGeocode && !autoData.geo) geoFailCount++;
       }
 
       // 2) render the overlay (synchronous, fast, cannot hang)
