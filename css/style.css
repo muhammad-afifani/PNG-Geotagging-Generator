@@ -805,6 +805,18 @@ body { min-height: 100vh; }
 .manual-fields .field-row { grid-column: 1 / -1; display: flex; gap: 12px; }
 .manual-fields .field-row .field { flex: 1; min-width: 0; }
 
+/* #dataFotoCard is now a full-width card (moved up top so it — and the
+   map/calendar right after it — are visible without scrolling past the
+   whole settings panel below); cap the CSV/manual-entry controls at a
+   readable width instead of letting them stretch edge-to-edge. The
+   Preview Data table below is deliberately NOT capped — it benefits
+   from the extra width. */
+#dataFotoCard > .mode-toggle,
+#dataFotoCard > #csvModePanel,
+#dataFotoCard > #manualModePanel {
+  max-width: 640px;
+}
+
 /* ---------- data preview table ---------- */
 .data-preview { margin-top: 18px; }
 .data-preview.hidden { display: none; }

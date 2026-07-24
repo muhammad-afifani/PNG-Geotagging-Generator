@@ -85,13 +85,11 @@
 
   <!-- ============ TAB 1 : OVERLAY PNG (existing feature) ============ -->
   <div id="tab-overlay" class="tab-panel active">
-  <div class="layout">
 
-    <!-- ============ LEFT COLUMN : INPUTS ============ -->
-    <div class="col col-left">
-
-      <!-- STEP 1 : DATA (CSV or manual) -->
-      <section class="card">
+  <!-- STEP 1 : DATA (CSV or manual) — full width, up top so it (and the
+       map/calendar right after it) are visible without scrolling past
+       the whole settings panel below -->
+  <section class="card" id="dataFotoCard">
         <div class="card-head">
           <span class="step-badge">1</span>
           <h2>Data Foto</h2>
@@ -211,7 +209,39 @@
             </table>
           </div>
         </div>
-      </section>
+  </section>
+
+  <section class="card map-calendar-card">
+    <div class="card-head">
+      <h2>Peta &amp; Kalender Data</h2>
+      <span class="preview-tag" id="mcCount"></span>
+    </div>
+    <p class="hint" style="margin-top:0;">Semua titik yang sudah kamu import (dari CSV maupun Input Manual) muncul di peta ini — pilih tampilan Jalan/Satelit lewat kontrol di pojok kanan-atas peta. <strong>Geser pin</strong> untuk mengoreksi koordinat suatu baris — datanya (dan watermark-nya) otomatis menyesuaikan. Kalender di sebelahnya menunjukkan tanggal mana saja yang sudah ada datanya — klik satu tanggal untuk menyorot titik-titiknya di peta.</p>
+    <div class="map-calendar-layout">
+      <div class="mc-map-wrap">
+        <div id="mcMap" class="mc-map"></div>
+        <div id="mcMapEmpty" class="mc-map-empty">
+          <p>Belum ada data untuk ditampilkan. Upload CSV atau tambah baris manual dulu di atas.</p>
+        </div>
+      </div>
+      <div class="mc-calendar-wrap">
+        <div id="mcCalendarEmpty" class="mc-calendar-empty">Belum ada tanggal untuk ditampilkan.</div>
+        <div id="mcCalendarMonths"></div>
+        <div id="mcFilterInfo" class="mc-filter-info hidden">
+          <div class="mc-filter-head">
+            <span id="mcFilterLabel"></span>
+            <button type="button" class="btn btn-tiny" id="mcFilterClearBtn">× Tampilkan Semua</button>
+          </div>
+          <p id="mcFilterList" class="mc-filter-list"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="layout">
+
+    <!-- ============ LEFT COLUMN : APPEARANCE SETTINGS ============ -->
+    <div class="col col-left">
 
       <!-- STEP 2 : LOGO -->
       <section class="card">
@@ -534,33 +564,6 @@
 
     </div>
   </div>
-
-  <section class="card map-calendar-card">
-    <div class="card-head">
-      <h2>Peta &amp; Kalender Data</h2>
-      <span class="preview-tag" id="mcCount"></span>
-    </div>
-    <p class="hint" style="margin-top:0;">Semua titik yang sudah kamu import (dari CSV maupun Input Manual) muncul di peta ini — pilih tampilan Jalan/Satelit lewat kontrol di pojok kanan-atas peta. <strong>Geser pin</strong> untuk mengoreksi koordinat suatu baris — datanya (dan watermark-nya) otomatis menyesuaikan. Kalender di sebelahnya menunjukkan tanggal mana saja yang sudah ada datanya — klik satu tanggal untuk menyorot titik-titiknya di peta.</p>
-    <div class="map-calendar-layout">
-      <div class="mc-map-wrap">
-        <div id="mcMap" class="mc-map"></div>
-        <div id="mcMapEmpty" class="mc-map-empty">
-          <p>Belum ada data untuk ditampilkan. Upload CSV atau tambah baris manual dulu di atas.</p>
-        </div>
-      </div>
-      <div class="mc-calendar-wrap">
-        <div id="mcCalendarEmpty" class="mc-calendar-empty">Belum ada tanggal untuk ditampilkan.</div>
-        <div id="mcCalendarMonths"></div>
-        <div id="mcFilterInfo" class="mc-filter-info hidden">
-          <div class="mc-filter-head">
-            <span id="mcFilterLabel"></span>
-            <button type="button" class="btn btn-tiny" id="mcFilterClearBtn">× Tampilkan Semua</button>
-          </div>
-          <p id="mcFilterList" class="mc-filter-list"></p>
-        </div>
-      </div>
-    </div>
-  </section>
   </div><!-- /tab-overlay -->
 
   <!-- ============ TAB 2 : ATTACH OVERLAY TO PHOTO ============ -->
