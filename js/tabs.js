@@ -76,4 +76,14 @@
       setGuideCollapsed(!guideBanner.classList.contains('collapsed'));
     });
   }
+
+  // --- generic collapsible card (e.g. Tab 1's "Data Foto" step) ---
+  document.querySelectorAll('.card-collapse-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.collapsible-card');
+      if (!card) return;
+      const collapsed = card.classList.toggle('collapsed');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+    });
+  });
 })();

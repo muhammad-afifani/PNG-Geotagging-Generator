@@ -805,17 +805,60 @@ body { min-height: 100vh; }
 .manual-fields .field-row { grid-column: 1 / -1; display: flex; gap: 12px; }
 .manual-fields .field-row .field { flex: 1; min-width: 0; }
 
-/* #dataFotoCard is now a full-width card (moved up top so it — and the
+/* #dataFotoCard is a full-width card (moved up top so it — and the
    map/calendar right after it — are visible without scrolling past the
-   whole settings panel below); cap the CSV/manual-entry controls at a
-   readable width instead of letting them stretch edge-to-edge. The
-   Preview Data table below is deliberately NOT capped — it benefits
-   from the extra width. */
-#dataFotoCard > .mode-toggle,
-#dataFotoCard > #csvModePanel,
-#dataFotoCard > #manualModePanel {
+   whole settings panel below). The manual-entry form still benefits
+   from being capped rather than stretching edge-to-edge; the CSV panel
+   instead fills the width via .csv-upload-row's two columns below. The
+   Preview Data table is deliberately NOT capped — it benefits from the
+   extra width. */
+.collapsible-card-body > .mode-toggle,
+.collapsible-card-body > #manualModePanel {
   max-width: 640px;
 }
+
+/* CSV dropzone (left, capped) + detected-columns panel (right, fills
+   the rest of the card's width instead of leaving it empty) */
+.csv-upload-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.csv-upload-left {
+  flex: 1 1 380px;
+  max-width: 460px;
+  min-width: 260px;
+}
+.csv-upload-right {
+  flex: 1 1 380px;
+  min-width: 260px;
+  padding-top: 2px;
+}
+#csvColMapPlaceholder {
+  color: var(--text-faint);
+  font-style: italic;
+}
+#csvColMapPlaceholder.hidden { display: none; }
+
+/* ---------- collapsible card (Data Foto step-1 card) ---------- */
+.card-collapse-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 5px;
+  margin: -5px;
+  cursor: pointer;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.card-collapse-btn:hover { background: rgba(61,220,151,0.08); color: var(--text); }
+.card-collapse-chevron { transition: transform .18s ease; }
+.collapsible-card.collapsed .card-collapse-chevron { transform: rotate(-90deg); }
+.collapsible-card.collapsed .collapsible-card-body { display: none; }
+.collapsible-card.collapsed .card-head { margin-bottom: 0; }
 
 /* ---------- data preview table ---------- */
 .data-preview { margin-top: 18px; }

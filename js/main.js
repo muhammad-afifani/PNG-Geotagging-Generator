@@ -26,6 +26,8 @@
     csvInput: document.getElementById('csvInput'),
     csvInfo: document.getElementById('csvInfo'),
     csvColMap: document.getElementById('csvColMap'),
+    csvColMapPlaceholder: document.getElementById('csvColMapPlaceholder'),
+    dataFotoSummary: document.getElementById('dataFotoSummary'),
 
     manualFile: document.getElementById('manualFile'),
     manualLat: document.getElementById('manualLat'),
@@ -374,6 +376,8 @@
     el.previewRowTag.textContent = state.rows.length
       ? `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length}`
       : '—';
+    el.dataFotoSummary.textContent = state.rows.length ? `${state.rows.length} baris` : '';
+    el.dataFotoSummary.classList.toggle('hidden', state.rows.length === 0);
     renderDataPreviewTable();
     renderPreview();
     notifyRowsChanged();
@@ -499,6 +503,7 @@
     state.rows = [];
     el.csvInfo.classList.add('hidden');
     el.csvColMap.classList.add('hidden');
+    el.csvColMapPlaceholder.classList.remove('hidden');
     refreshAfterRowsChanged('first');
   });
 
@@ -565,6 +570,7 @@
     });
     el.csvColMap.innerHTML = entries.join('');
     el.csvColMap.classList.remove('hidden');
+    el.csvColMapPlaceholder.classList.add('hidden');
   }
 
   // ---------- logo upload ----------
