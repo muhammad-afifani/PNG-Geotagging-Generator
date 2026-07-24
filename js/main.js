@@ -19,10 +19,33 @@
 
   // ---------- element refs ----------
   const el = {
+    dataInputModeRadios: document.querySelectorAll('input[name="dataInputMode"]'),
+    csvModePanel: document.getElementById('csvModePanel'),
+    manualModePanel: document.getElementById('manualModePanel'),
     dropZone: document.getElementById('dropZone'),
     csvInput: document.getElementById('csvInput'),
     csvInfo: document.getElementById('csvInfo'),
     csvColMap: document.getElementById('csvColMap'),
+
+    manualFile: document.getElementById('manualFile'),
+    manualLat: document.getElementById('manualLat'),
+    manualLng: document.getElementById('manualLng'),
+    manualDate: document.getElementById('manualDate'),
+    manualTime: document.getElementById('manualTime'),
+    manualLocation: document.getElementById('manualLocation'),
+    manualAddress: document.getElementById('manualAddress'),
+    manualNote: document.getElementById('manualNote'),
+    manualPhone: document.getElementById('manualPhone'),
+    manualTemperature: document.getElementById('manualTemperature'),
+    manualWind: document.getElementById('manualWind'),
+    manualAltitude: document.getElementById('manualAltitude'),
+    manualDirection: document.getElementById('manualDirection'),
+    addManualRowBtn: document.getElementById('addManualRowBtn'),
+
+    dataPreviewSection: document.getElementById('dataPreviewSection'),
+    dataPreviewCount: document.getElementById('dataPreviewCount'),
+    dataPreviewBody: document.getElementById('dataPreviewBody'),
+    clearRowsBtn: document.getElementById('clearRowsBtn'),
 
     logoModeRadios: document.querySelectorAll('input[name="logoMode"]'),
     logoUploadZone: document.getElementById('logoUploadZone'),
@@ -306,6 +329,43 @@
     e.target.value = '';
   });
 
+  // ---------- data input mode (CSV vs manual) ----------
+  el.dataInputModeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      const mode = document.querySelector('input[name="dataInputMode"]:checked').value;
+      el.csvModePanel.classList.toggle('hidden', mode !== 'csv');
+      el.manualModePanel.classList.toggle('hidden', mode !== 'manual');
+    });
+  });
+
+  /**
+   * Shared refresh after state.rows changes for ANY reason (CSV load,
+   * manual add, manual delete) — keeps stats, the generate button, the
+   * sample preview, and the data-preview table all in sync in one place.
+   *
+   * sampleIndexMode:
+   *   'first'  - jump to row 0 (fresh CSV load)
+   *   'last'   - jump to the last row (a new manual row was just added)
+   *   'clamp'  - keep the current index, only pull it back in bounds if
+   *              it now overflows (a row was deleted)
+   */
+  function refreshAfterRowsChanged(sampleIndexMode) {
+    if (sampleIndexMode === 'first') {
+      state.sampleIndex = 0;
+    } else if (sampleIndexMode === 'last') {
+      state.sampleIndex = state.rows.length ? state.rows.length - 1 : 0;
+    } else if (state.sampleIndex >= state.rows.length) {
+      state.sampleIndex = state.rows.length ? state.rows.length - 1 : 0;
+    }
+    el.statTotal.textContent = state.rows.length;
+    el.generateBtn.disabled = state.rows.length === 0;
+    el.previewRowTag.textContent = state.rows.length
+      ? `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length}`
+      : '—';
+    renderDataPreviewTable();
+    renderPreview();
+  }
+
   // ---------- CSV upload ----------
   el.dropZone.addEventListener('click', () => el.csvInput.click());
   el.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); el.dropZone.classList.add('dragover'); });
@@ -335,16 +395,115 @@
       el.csvInfo.innerHTML = `<span><strong>${file.name}</strong> — ${state.rows.length} baris</span>`;
 
       renderColMapUI();
-
-      el.statTotal.textContent = state.rows.length;
-      el.generateBtn.disabled = state.rows.length === 0;
-      el.previewRowTag.textContent = state.rows.length ? `Baris contoh #1 dari ${state.rows.length}` : '—';
-
-      renderPreview();
+      refreshAfterRowsChanged('first');
     } catch (err) {
       console.error(err);
       alert('Gagal membaca CSV. Pastikan format file benar.');
     }
+  }
+
+  // ---------- manual single-row input ----------
+  function addManualRow() {
+    const lat = parseFloat(el.manualLat.value);
+    const lng = parseFloat(el.manualLng.value);
+    if (isNaN(lat) || isNaN(lng)) {
+      alert('Latitude dan Longitude wajib diisi dengan angka yang valid.');
+      return;
+    }
+    const idx = state.rows.length;
+    const fileName = el.manualFile.value.trim() || `IMG_${String(idx + 1).padStart(4, '0')}`;
+    const location = el.manualLocation.value.trim();
+
+    const row = {
+      _index: idx,
+      file: fileName,
+      lat, lng,
+      date: el.manualDate.value || '',
+      time: el.manualTime.value || '',
+      location,
+      address: el.manualAddress.value.trim(),
+      city: location,
+      note: el.manualNote.value.trim(),
+      phone: el.manualPhone.value.trim(),
+      temperature: el.manualTemperature.value.trim(),
+      wind: el.manualWind.value.trim(),
+      altitude: el.manualAltitude.value.trim(),
+      direction: el.manualDirection.value.trim()
+    };
+    state.rows.push(row);
+
+    // clear the form for the next entry, ready for the next test photo
+    [el.manualFile, el.manualLat, el.manualLng, el.manualLocation, el.manualAddress,
+      el.manualNote, el.manualPhone, el.manualTemperature, el.manualWind, el.manualAltitude, el.manualDirection]
+      .forEach(input => { input.value = ''; });
+
+    refreshAfterRowsChanged('last');
+    el.manualFile.focus();
+  }
+  el.addManualRowBtn.addEventListener('click', addManualRow);
+
+  function deleteRow(index) {
+    state.rows.splice(index, 1);
+    state.rows.forEach((r, i) => { r._index = i; });
+    refreshAfterRowsChanged('clamp');
+  }
+
+  el.clearRowsBtn.addEventListener('click', () => {
+    if (!state.rows.length) return;
+    if (!confirm(`Kosongkan semua ${state.rows.length} baris data?`)) return;
+    state.rows = [];
+    el.csvInfo.classList.add('hidden');
+    el.csvColMap.classList.add('hidden');
+    refreshAfterRowsChanged('first');
+  });
+
+  // ---------- data preview table ----------
+  const DATA_PREVIEW_MAX_ROWS = 300;
+
+  function renderDataPreviewTable() {
+    const total = state.rows.length;
+    el.dataPreviewSection.classList.toggle('hidden', total === 0);
+    if (!total) { el.dataPreviewBody.innerHTML = ''; return; }
+
+    const shown = state.rows.slice(0, DATA_PREVIEW_MAX_ROWS);
+    el.dataPreviewCount.textContent = total > DATA_PREVIEW_MAX_ROWS
+      ? `${total} baris (menampilkan ${DATA_PREVIEW_MAX_ROWS} pertama)`
+      : `${total} baris`;
+
+    el.dataPreviewBody.innerHTML = shown.map((row, i) => `
+      <tr data-index="${i}" class="${i === state.sampleIndex ? 'active' : ''}">
+        <td>${i + 1}</td>
+        <td class="dp-file">${escapeHtml(row.file)}</td>
+        <td>${isNaN(row.lat) ? '' : row.lat}</td>
+        <td>${isNaN(row.lng) ? '' : row.lng}</td>
+        <td>${escapeHtml(row.date)}</td>
+        <td>${escapeHtml(row.time)}</td>
+        <td>${escapeHtml(row.location)}</td>
+        <td>${escapeHtml(row.address)}</td>
+        <td><button class="dp-delete-btn" type="button" data-index="${i}" aria-label="Hapus baris">×</button></td>
+      </tr>
+    `).join('');
+  }
+
+  el.dataPreviewBody.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.dp-delete-btn');
+    if (delBtn) {
+      deleteRow(Number(delBtn.dataset.index));
+      return;
+    }
+    const tr = e.target.closest('tr[data-index]');
+    if (tr) {
+      state.sampleIndex = Number(tr.dataset.index);
+      el.previewRowTag.textContent = `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length}`;
+      renderDataPreviewTable();
+      renderPreview();
+    }
+  });
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
   }
 
   function renderColMapUI() {

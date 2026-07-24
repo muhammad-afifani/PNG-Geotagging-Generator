@@ -87,7 +87,7 @@
     el.statRows.textContent = rows.length;
     el.generateBtn.disabled = !(state.photos.length && rows.length);
     if (!rows.length) {
-      el.previewHint.textContent = 'CSV belum dimuat. Buka Tab 1 dan upload CSV dulu.';
+      el.previewHint.textContent = 'Data belum ada. Buka Tab 1 dan upload CSV atau isi input manual dulu.';
     }
   }
   window.addEventListener('geostamp:tabchange', (e) => {
