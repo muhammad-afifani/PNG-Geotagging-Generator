@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GPS Map Camera — Overlay Generator</title>
 <link rel="icon" type="image/png" href="assets/logo-icon.png">
+<link rel="stylesheet" href="libs/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -36,7 +37,7 @@
     <button class="guide-toggle" id="guideToggleBtn" type="button" aria-expanded="true" aria-controls="guideBody">
       <span class="guide-toggle-text">
         <strong>Panduan Cara Pakai</strong>
-        <span class="guide-toggle-sub">Alur 3 tab &amp; kenapa tool ini dibuat — klik untuk buka/tutup</span>
+        <span class="guide-toggle-sub">Alur 4 tab &amp; kenapa tool ini dibuat — klik untuk buka/tutup</span>
       </span>
       <svg class="guide-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -49,13 +50,14 @@
       </div>
 
       <div class="guide-flow">
-        <p class="guide-flow-title">Alur pakai (baca ini dulu sebelum mulai):</p>
+        <p class="guide-flow-title">Kegunaan tiap tab (baca ini dulu sebelum mulai):</p>
         <ol class="guide-steps">
-          <li><strong>Mulai di Tab 1 — Overlay PNG.</strong> Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), atau kalau cuma mau tes beberapa foto pakai mode Input Manual, lalu atur tampilan overlay di sini. <u>Data, logo, dan semua pengaturan yang kamu atur di Tab 1 otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
-          <li><strong>Tab 2 — Tempel ke Foto</strong> dipakai kalau kamu mau overlay langsung "dibakar" ke foto asli (upload foto di sini, datanya diambil dari CSV Tab 1).</li>
-          <li><strong>Tab 3 — Geotag Metadata</strong> dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF foto JPG, tanpa watermark terlihat.</li>
+          <li><strong>Tab 1 — Watermark GPS.</strong> Titik mulai semua kerja. Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), atau kalau cuma mau tes beberapa foto pakai mode Input Manual satu-satu. Di sini juga kamu atur tampilan watermark (template, warna, ukuran, logo, dll), cek datanya di tabel Preview Data serta peta &amp; kalender di bawahnya, lalu generate untuk mendapat file PNG watermark transparan (satu per foto, dikumpulkan jadi satu ZIP). <u>Data, logo, dan semua pengaturan yang kamu atur di sini otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
+          <li><strong>Tab 2 — Tempel ke Foto.</strong> Dipakai kalau kamu mau watermark langsung "dibakar" menyatu ke foto asli kamu (bukan file PNG terpisah). Upload foto-foto aslinya di sini; datanya (koordinat, tanggal, dst) diambil otomatis dari yang sudah diisi di Tab 1, dipasangkan per foto berdasarkan nama file atau urutan.</li>
+          <li><strong>Tab 3 — Geotag Metadata.</strong> Dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF (bukan watermark yang kelihatan di foto) — hasilnya foto tetap terlihat asli/bersih, tapi kalau dicek propertinya sudah ada info lokasi &amp; tanggalnya.</li>
+          <li><strong>Tab 4 — Buat CSV dari Foto.</strong> Tool kecil yang berdiri sendiri, terpisah dari Tab 1-3. Berguna kalau foto kamu tanggal/jam pemotretannya sudah hilang atau salah: pilih folder foto, tool ini ekstrak nama file + tanggal/jam (dari EXIF kalau ada, atau dari file) ke tabel yang bisa dikoreksi manual, lalu diunduh sebagai CSV siap dipakai di Tab 1.</li>
         </ol>
-        <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload ke Tab 1.</p>
+        <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload ke Tab 1. Atau kalau tanggal/jam fotomu sudah hilang, mulai dari Tab 4 dulu untuk membuat CSV-nya.</p>
         <a class="btn btn-secondary guide-download" href="contoh-format.csv" download="contoh-format.csv">Download Contoh CSV</a>
       </div>
     </div>
@@ -64,7 +66,7 @@
   <!-- ============ TAB NAV ============ -->
   <nav class="tabnav" role="tablist">
     <button class="tab-btn active" data-tab="tab-overlay" role="tab">
-      <span class="tab-btn-title">1 · Overlay PNG</span>
+      <span class="tab-btn-title">1 · Watermark GPS</span>
       <span class="tab-btn-sub">Isi data foto di sini dulu</span>
     </button>
     <button class="tab-btn" data-tab="tab-attach" role="tab">
@@ -532,6 +534,33 @@
 
     </div>
   </div>
+
+  <section class="card map-calendar-card">
+    <div class="card-head">
+      <h2>Peta &amp; Kalender Data</h2>
+      <span class="preview-tag" id="mcCount"></span>
+    </div>
+    <p class="hint" style="margin-top:0;">Semua titik yang sudah kamu import (dari CSV maupun Input Manual) muncul di peta ini — pilih tampilan Jalan/Satelit lewat kontrol di pojok kanan-atas peta. <strong>Geser pin</strong> untuk mengoreksi koordinat suatu baris — datanya (dan watermark-nya) otomatis menyesuaikan. Kalender di sebelahnya menunjukkan tanggal mana saja yang sudah ada datanya — klik satu tanggal untuk menyorot titik-titiknya di peta.</p>
+    <div class="map-calendar-layout">
+      <div class="mc-map-wrap">
+        <div id="mcMap" class="mc-map"></div>
+        <div id="mcMapEmpty" class="mc-map-empty">
+          <p>Belum ada data untuk ditampilkan. Upload CSV atau tambah baris manual dulu di atas.</p>
+        </div>
+      </div>
+      <div class="mc-calendar-wrap">
+        <div id="mcCalendarEmpty" class="mc-calendar-empty">Belum ada tanggal untuk ditampilkan.</div>
+        <div id="mcCalendarMonths"></div>
+        <div id="mcFilterInfo" class="mc-filter-info hidden">
+          <div class="mc-filter-head">
+            <span id="mcFilterLabel"></span>
+            <button type="button" class="btn btn-tiny" id="mcFilterClearBtn">× Tampilkan Semua</button>
+          </div>
+          <p id="mcFilterList" class="mc-filter-list"></p>
+        </div>
+      </div>
+    </div>
+  </section>
   </div><!-- /tab-overlay -->
 
   <!-- ============ TAB 2 : ATTACH OVERLAY TO PHOTO ============ -->
@@ -839,6 +868,7 @@
 <script src="libs/jszip.min.js"></script>
 <script src="libs/FileSaver.min.js"></script>
 <script src="libs/piexif.min.js"></script>
+<script src="libs/leaflet/leaflet.js"></script>
 <script src="js/dms.js"></script>
 <script src="js/maptile.js"></script>
 <script src="js/countries.js"></script>
@@ -849,6 +879,7 @@
 <script src="js/settings.js"></script>
 <script src="js/exifgeo.js"></script>
 <script src="js/main.js"></script>
+<script src="js/mapview.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/attach.js"></script>
 <script src="js/geotag.js"></script>

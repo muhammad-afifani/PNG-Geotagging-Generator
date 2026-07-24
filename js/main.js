@@ -376,6 +376,39 @@
       : '—';
     renderDataPreviewTable();
     renderPreview();
+    notifyRowsChanged();
+  }
+
+  // ---------- rows-changed pub/sub (used by mapview.js to keep the
+  // map + calendar in sync without main.js needing to know it exists) ----------
+  const rowsChangedListeners = [];
+  function notifyRowsChanged() {
+    rowsChangedListeners.forEach(cb => { try { cb(state.rows); } catch (e) { console.error(e); } });
+  }
+
+  /**
+   * Update a single row's coordinates (used by the draggable map pin in
+   * mapview.js) and refresh whatever depends on it — the data-preview
+   * table cell and, if it's the currently-previewed row, the sample
+   * preview canvas. Deliberately does NOT call notifyRowsChanged(): the
+   * caller already owns the marker that triggered this, so re-broadcasting
+   * would just make mapview.js rebuild the map it's already updating.
+   */
+  function updateRowCoords(index, lat, lng) {
+    const row = state.rows[index];
+    if (!row) return;
+    row.lat = lat;
+    row.lng = lng;
+    renderDataPreviewTable();
+    if (index === state.sampleIndex) renderPreview();
+  }
+
+  function setSampleIndex(index) {
+    if (index < 0 || index >= state.rows.length) return;
+    state.sampleIndex = index;
+    el.previewRowTag.textContent = `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length}`;
+    renderDataPreviewTable();
+    renderPreview();
   }
 
   // ---------- CSV upload ----------
@@ -1094,7 +1127,11 @@
     resolveAutoDataForRow: (row, settings) => resolveAutoDataForRow(row, settings),
     renderOverlay: (canvas, row, opts) => renderOverlay(canvas, row, opts),
     sanitizeFilename: (s) => sanitizeFilename(s),
-    timestampSlug: () => timestampSlug()
+    timestampSlug: () => timestampSlug(),
+    getSampleIndex: () => state.sampleIndex,
+    setSampleIndex: (index) => setSampleIndex(index),
+    updateRowCoords: (index, lat, lng) => updateRowCoords(index, lat, lng),
+    onRowsChanged: (cb) => { rowsChangedListeners.push(cb); }
   };
 
 })();
