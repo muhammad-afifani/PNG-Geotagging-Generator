@@ -30,6 +30,7 @@ const DEFAULT_SETTINGS = {
   template: 'classic',  // 'classic' (Template 1) | 'gpscam2' (Template 2)
   gmtOffset: '+08:00',  // GMT offset shown on Template 2's date line
   showTime: false,       // Template 2 only: include time-of-day on the date line
+  watermarkLang: 'en',   // Template 2 only: 'en' (Monday, Lat/Long) | 'id' (Senin, LU/LS/BT/BB)
   mapAspect: '1:1',      // Template 2 only: map thumbnail aspect ratio (width:height)
   noteOverride: '',      // Template 2 only: "Note : ..." line for all rows (overrides CSV "note" column)
   contactOverride: '',   // Template 2 only: contact/phone line for all rows (overrides CSV "phone" column)

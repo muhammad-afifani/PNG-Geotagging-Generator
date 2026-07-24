@@ -551,7 +551,16 @@ function renderOverlayClassic(canvas, row, opts) {
   ctx.font = `700 ${cityFont}px Inter, Arial, sans-serif`;
   const cityLine = row.city || row.location || geo.city || '';
   cursorY += cityFont * 0.85;
-  ctx.fillText(truncateToWidth(ctx, cityLine, textAvailW), textStartX, cursorY);
+  const flagImg = opts.countryFlagImg;
+  const flagH = cityFont * 0.6;
+  const flagW = flagImg ? flagH * (flagImg.width / flagImg.height) : 0;
+  const flagGap = flagImg ? 8 * scale : 0;
+  const cityDrawn = truncateToWidth(ctx, cityLine, Math.max(textAvailW - flagW - flagGap, 10));
+  ctx.fillText(cityDrawn, textStartX, cursorY);
+  if (flagImg) {
+    const cityW = ctx.measureText(cityDrawn).width;
+    ctx.drawImage(flagImg, textStartX + cityW + flagGap, cursorY - flagH * 0.82, flagW, flagH);
+  }
   cursorY += 6 * scale;
 
   // Address (up to 2 lines)
@@ -586,21 +595,35 @@ function renderOverlayClassic(canvas, row, opts) {
  * Format the decimal-degree "Lat X, Long Y" line used by Template 2
  * (as opposed to Template 1's DMS-formatted line).
  */
-function formatDecimalLatLngLine(lat, lng) {
+/**
+ * Format Template 2's lat/long line. English: "Lat 6.123456   Long
+ * 106.123456" (signed decimal). Indonesian: "6.123456 LS   106.123456
+ * BT" (Lintang Utara/Selatan, Bujur Timur/Barat — absolute value with
+ * a direction suffix instead of a sign).
+ */
+function formatDecimalLatLngLine(lat, lng, lang) {
   if (isNaN(lat) || isNaN(lng)) return '';
+  if (lang === 'id') {
+    const latDir = lat >= 0 ? 'LU' : 'LS';
+    const lngDir = lng >= 0 ? 'BT' : 'BB';
+    return `${Math.abs(lat).toFixed(6)} ${latDir}   ${Math.abs(lng).toFixed(6)} ${lngDir}`;
+  }
   return `Lat ${lat.toFixed(6)}   Long ${lng.toFixed(6)}`;
 }
 
 /**
- * Format Template 2's date line: "Weekday, DD/MM/YYYY[ h:mm AM/PM] GMT+HH:MM".
+ * Format Template 2's date line: "Weekday, DD/MM/YYYY[ h:mm AM/PM] GMT+HH:MM"
+ * ("Hari, DD/MM/YYYY[ HH:mm] GMT+HH:MM" in Indonesian).
  */
-function formatDateGmtLine(dateStr, timeStr, showTime, gmtOffset) {
+function formatDateGmtLine(dateStr, timeStr, showTime, gmtOffset, lang) {
   const d = parseFlexibleDate(dateStr);
   const offset = gmtOffset || '+08:00';
   if (!d) return `GMT${offset}`;
   const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const daysId = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const days = lang === 'id' ? daysId : daysEn;
   const p = (n) => String(n).padStart(2, '0');
-  let line = `${daysEn[d.getDay()]}, ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+  let line = `${days[d.getDay()]}, ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
   if (showTime && timeStr) {
     line += ` ${formatTimeForOverlay(timeStr)}`;
   }
@@ -680,12 +703,24 @@ function drawCompassIconLocal(ctx, cx, cy, r, color) {
   ctx.restore();
 }
 
+// Fixed, characteristic colors per icon type — these stay colorful
+// regardless of the user's chosen font color, so the geo-info row
+// reads at a glance instead of blending into plain white/dark text.
+const GEO_ICON_COLORS = {
+  temp: '#FFB300',      // amber sun
+  wind: '#29B6F6',      // sky blue
+  altitude: '#EF5350',  // red (matches a GPS-altitude pin)
+  direction: '#AB47BC'  // purple compass
+};
+
 /**
  * Draw a horizontal row of up to 4 icon+value chips (temperature,
  * wind, altitude, compass direction) spaced evenly across `w`.
  * `items`: [{ icon: 'temp'|'wind'|'altitude'|'direction', text }]
+ * `textColor` applies to the value text only — the icons always use
+ * their own fixed colors (see GEO_ICON_COLORS) so they stay colorful.
  */
-function drawGeoInfoRow(ctx, x, y, w, h, fontPx, color, items) {
+function drawGeoInfoRow(ctx, x, y, w, h, fontPx, textColor, items) {
   if (!items.length) return;
   const cellW = w / items.length;
   ctx.save();
@@ -696,11 +731,12 @@ function drawGeoInfoRow(ctx, x, y, w, h, fontPx, color, items) {
     const cellX = x + i * cellW;
     const iconSize = h * 0.85;
     const iconY = y + (h - iconSize) / 2;
-    if (item.icon === 'temp') drawSunIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, color);
-    else if (item.icon === 'wind') drawWindIconLocal(ctx, cellX, iconY, iconSize, iconSize, color);
-    else if (item.icon === 'altitude') drawMountainIconLocal(ctx, cellX, iconY, iconSize, iconSize, color);
-    else if (item.icon === 'direction') drawCompassIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, color);
-    ctx.fillStyle = color;
+    const iconColor = GEO_ICON_COLORS[item.icon] || textColor;
+    if (item.icon === 'temp') drawSunIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, iconColor);
+    else if (item.icon === 'wind') drawWindIconLocal(ctx, cellX, iconY, iconSize, iconSize, iconColor);
+    else if (item.icon === 'altitude') drawMountainIconLocal(ctx, cellX, iconY, iconSize, iconSize, iconColor);
+    else if (item.icon === 'direction') drawCompassIconLocal(ctx, cellX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, iconColor);
+    ctx.fillStyle = textColor;
     ctx.fillText(truncateToWidth(ctx, item.text, cellW - iconSize - h * 0.16), cellX + iconSize + h * 0.16, y + h / 2);
   });
   ctx.restore();
@@ -782,9 +818,15 @@ function renderOverlayTemplate2(canvas, row, opts) {
   if (contactText) extraRows++;
   if (geoItems.length) extraRows++;
 
+  // Card HEIGHT is driven by `scale` (the "Ukuran Overlay" setting)
+  // only -- deliberately NOT by fontScale ("Ukuran Font"), so bumping
+  // the font size makes the text bigger without also inflating the
+  // whole card, matching how Template 1's fixed-height card behaves.
+  const layoutTitleLineH = 32 * 1.2 * scale;
+  const layoutBodyLineH = 24 * 1.3 * scale;
   const boxH = Math.min(
-    padTop + titleLineH + 4 * scale + bodyLineH * 2 /* address, up to 2 lines */
-      + bodyLineH /* lat/long */ + bodyLineH /* date */ + extraRows * bodyLineH + padBottom,
+    padTop + layoutTitleLineH + 4 * scale + layoutBodyLineH * 2 /* address, up to 2 lines */
+      + layoutBodyLineH /* lat/long */ + layoutBodyLineH /* date */ + extraRows * layoutBodyLineH + padBottom,
     H - margin * 2 - badgeH
   );
 
@@ -904,11 +946,11 @@ function renderOverlayTemplate2(canvas, row, opts) {
 
   // Decimal lat/long line
   cursorY += bodyLineH;
-  ctx.fillText(truncateToWidth(ctx, formatDecimalLatLngLine(row.lat, row.lng), textAvailW), textStartX, cursorY);
+  ctx.fillText(truncateToWidth(ctx, formatDecimalLatLngLine(row.lat, row.lng, opts.watermarkLang), textAvailW), textStartX, cursorY);
 
   // Date + time + GMT offset line
   cursorY += bodyLineH;
-  ctx.fillText(truncateToWidth(ctx, formatDateGmtLine(row.date, row.time, !!opts.showTime, opts.gmtOffset), textAvailW), textStartX, cursorY);
+  ctx.fillText(truncateToWidth(ctx, formatDateGmtLine(row.date, row.time, !!opts.showTime, opts.gmtOffset, opts.watermarkLang), textAvailW), textStartX, cursorY);
 
   // Note (optional)
   if (noteText) {

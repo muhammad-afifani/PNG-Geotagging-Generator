@@ -75,6 +75,10 @@
       <span class="tab-btn-title">3 · Geotag Metadata</span>
       <span class="tab-btn-sub">GPS ke EXIF, tanpa watermark</span>
     </button>
+    <button class="tab-btn" data-tab="tab-csvbuilder" role="tab">
+      <span class="tab-btn-title">4 · Buat CSV dari Foto</span>
+      <span class="tab-btn-sub">Tool terpisah, berdiri sendiri</span>
+    </button>
   </nav>
 
   <!-- ============ TAB 1 : OVERLAY PNG (existing feature) ============ -->
@@ -258,29 +262,29 @@
           </div>
 
           <div id="template2Fields" class="template2-fields hidden">
+            <div class="field">
+              <label for="gmtOffset">Zona Waktu (GMT Offset)</label>
+              <select id="gmtOffset">
+                <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
+                <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
+                <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
+                <option value="+00:00">GMT+00:00</option>
+                <option value="+01:00">GMT+01:00</option>
+                <option value="+02:00">GMT+02:00</option>
+                <option value="+03:00">GMT+03:00</option>
+                <option value="+04:00">GMT+04:00</option>
+                <option value="+05:00">GMT+05:00</option>
+                <option value="+05:30">GMT+05:30</option>
+                <option value="+06:00">GMT+06:00</option>
+                <option value="+09:30">GMT+09:30</option>
+                <option value="+10:00">GMT+10:00</option>
+                <option value="+11:00">GMT+11:00</option>
+                <option value="+12:00">GMT+12:00</option>
+                <option value="-05:00">GMT-05:00</option>
+                <option value="-08:00">GMT-08:00</option>
+              </select>
+            </div>
             <div class="field-row">
-              <div class="field">
-                <label for="gmtOffset">Zona Waktu (GMT Offset)</label>
-                <select id="gmtOffset">
-                  <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
-                  <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
-                  <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
-                  <option value="+00:00">GMT+00:00</option>
-                  <option value="+01:00">GMT+01:00</option>
-                  <option value="+02:00">GMT+02:00</option>
-                  <option value="+03:00">GMT+03:00</option>
-                  <option value="+04:00">GMT+04:00</option>
-                  <option value="+05:00">GMT+05:00</option>
-                  <option value="+05:30">GMT+05:30</option>
-                  <option value="+06:00">GMT+06:00</option>
-                  <option value="+09:30">GMT+09:30</option>
-                  <option value="+10:00">GMT+10:00</option>
-                  <option value="+11:00">GMT+11:00</option>
-                  <option value="+12:00">GMT+12:00</option>
-                  <option value="-05:00">GMT-05:00</option>
-                  <option value="-08:00">GMT-08:00</option>
-                </select>
-              </div>
               <div class="field">
                 <label for="mapAspect">Rasio Peta</label>
                 <select id="mapAspect">
@@ -289,6 +293,13 @@
                   <option value="3:4">3:4 (potret)</option>
                   <option value="16:9">16:9 (lebar)</option>
                   <option value="9:16">9:16 (tinggi)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="watermarkLang">Bahasa Watermark</label>
+                <select id="watermarkLang">
+                  <option value="en" selected>English (Monday, Lat/Long)</option>
+                  <option value="id">Indonesia (Senin, LU/LS/BT/BB)</option>
                 </select>
               </div>
             </div>
@@ -751,6 +762,56 @@
     </div>
   </div><!-- /tab-geotag -->
 
+  <!-- ============ TAB 4 : BUILD CSV FROM PHOTOS (standalone tool) ============ -->
+  <div id="tab-csvbuilder" class="tab-panel">
+    <div class="layout">
+      <div class="col col-left">
+        <section class="card">
+          <div class="card-head">
+            <span class="step-badge">A</span>
+            <h2>Pilih Foto / Folder</h2>
+          </div>
+          <div id="cbDropZone" class="dropzone">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p><strong>Drag &amp; drop foto</strong> di sini, atau klik untuk memilih file</p>
+            <input type="file" id="cbFileInput" accept="image/*" multiple hidden>
+          </div>
+          <label class="btn btn-secondary btn-block btn-file" style="margin-top:10px;">
+            Atau Pilih Folder Langsung
+            <input type="file" id="cbFolderInput" webkitdirectory multiple hidden>
+          </label>
+          <div id="cbFileInfo" class="file-info hidden"></div>
+          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari Tab 1/2/3 — tidak berbagi data apapun. Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG — sumbernya ditandai di kolom "Sumber". <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
+        </section>
+      </div>
+
+      <div class="col col-right">
+        <section class="card">
+          <div class="card-head">
+            <h2>Hasil Ekstraksi</h2>
+            <span class="preview-tag" id="cbCount"></span>
+          </div>
+          <div class="data-preview-table-wrap" id="cbTableWrap" style="max-height:440px;">
+            <table class="data-preview-table" id="cbTable">
+              <thead>
+                <tr><th>#</th><th>Nama File</th><th>Tanggal</th><th>Waktu</th><th>Sumber</th></tr>
+              </thead>
+              <tbody id="cbTableBody"></tbody>
+            </table>
+          </div>
+          <div id="cbEmpty" class="preview-empty" style="position:static; padding:30px 10px;">
+            <p>Pilih foto atau folder di sebelah kiri untuk mulai ekstraksi.</p>
+          </div>
+          <button class="btn btn-primary btn-block" id="cbDownloadBtn" type="button" disabled style="margin-top:14px;">Download CSV</button>
+          <p class="hint">CSV yang dihasilkan punya kolom yang sama dengan contoh CSV Tab 1 (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat) — kolom Latitude/Longitude/Lokasi/Alamat sengaja dikosongkan untuk kamu isi manual lewat Excel/Google Sheets, lalu upload hasilnya ke Tab 1.</p>
+        </section>
+      </div>
+    </div>
+  </div><!-- /tab-csvbuilder -->
+
   <footer class="app-footer">
     <div class="footer-credit">
       <p class="footer-made">Dibuat oleh <strong>Muhammad Afifani Romadhan</strong> ·
@@ -791,5 +852,6 @@
 <script src="js/tabs.js"></script>
 <script src="js/attach.js"></script>
 <script src="js/geotag.js"></script>
+<script src="js/csvbuilder.js"></script>
 </body>
 </html>

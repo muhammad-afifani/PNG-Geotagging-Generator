@@ -885,3 +885,39 @@ body { min-height: 100vh; }
   border-radius: 4px;
 }
 .dp-delete-btn:hover { color: var(--danger); background: rgba(229,98,107,0.12); }
+
+/* ---------- Tab 4: CSV builder table (inline-editable date/time) ---------- */
+.data-preview-table input[type="date"],
+.data-preview-table input[type="time"] {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  width: 100%;
+  min-width: 120px;
+}
+.data-preview-table input[type="date"]:focus,
+.data-preview-table input[type="time"]:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.cb-source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cb-source-exif {
+  background: rgba(61,220,151,0.14);
+  color: var(--accent);
+}
+.cb-source-file {
+  background: rgba(245,166,35,0.16);
+  color: #f5a623;
+}
