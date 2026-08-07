@@ -32,6 +32,22 @@ const _geocodeCache = new Map();
 const _flagCache = new Map();
 
 /**
+ * Rough bounding box covering Indonesia's archipelago (Sabang to Papua,
+ * Aceh to Rote). Deliberately coarse — only used as a last-resort
+ * fallback (see below) when the geocoder found nothing at all for a
+ * coordinate, which happens often for open-water points (straits,
+ * shipping lanes between islands) since Esri's coastal reference data
+ * has gaps over water. A false positive here only affects points near
+ * Indonesia's borders that the real geocoder already failed to resolve
+ * either way, so it's a reasonable trade-off for this Indonesia-focused
+ * tool rather than leaving the title/flag blank for a real, in-country
+ * coordinate.
+ */
+function isLikelyIndonesianWaters(lat, lng) {
+  return lat >= -11.5 && lat <= 6.5 && lng >= 94.5 && lng <= 141.5;
+}
+
+/**
  * Reverse-geocode one coordinate into { city, province, country,
  * countryCode, address, flagIso2 }. Returns null on any failure,
  * timeout, or missing address data — never throws.
@@ -42,7 +58,12 @@ async function reverseGeocode(lat, lng, timeoutMs) {
   const cacheKey = `${lat.toFixed(4)}|${lng.toFixed(4)}`;
   if (_geocodeCache.has(cacheKey)) return _geocodeCache.get(cacheKey);
 
-  const url = `${REVERSE_GEOCODE_URL}?f=json&location=${lng},${lat}&langCode=id`;
+  // distance=50000 (50km search radius) so offshore points still resolve
+  // to the nearest coastal reference feature instead of coming back
+  // completely empty — otherwise any point more than a few hundred
+  // meters from shore (very common for Indonesia's inter-island straits)
+  // finds nothing at all.
+  const url = `${REVERSE_GEOCODE_URL}?f=json&location=${lng},${lat}&langCode=id&distance=50000`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || 7000);
 
@@ -52,14 +73,30 @@ async function reverseGeocode(lat, lng, timeoutMs) {
     if (!res.ok) { _geocodeCache.set(cacheKey, null); return null; }
 
     const data = await res.json();
-    const a = data && data.address;
-    if (!a) { _geocodeCache.set(cacheKey, null); return null; }
+    const a = (data && data.address) || {};
 
     const countryInfo = getCountryInfo(a.CountryCode);
-    const countryName = (countryInfo && countryInfo.name) || a.CountryCode || '';
-
+    let countryName = (countryInfo && countryInfo.name) || a.CountryCode || '';
+    let flagIso2 = countryInfo ? countryInfo.iso2 : null;
     const city = a.City || a.Subregion || '';
     const province = a.Region || '';
+
+    // Esri returned a technically-successful response but with nothing
+    // usable in it (typical for open water far enough from any coastal
+    // reference point that even the widened search radius above found
+    // nothing) — last-resort fallback to Indonesia if the coordinate is
+    // within its archipelago, rather than the request just failing here
+    // (which would leave the title/flag blank for a real coordinate).
+    if (!city && !province && !countryName) {
+      if (isLikelyIndonesianWaters(lat, lng)) {
+        const idn = getCountryInfo('IDN');
+        countryName = idn.name;
+        flagIso2 = idn.iso2;
+      } else {
+        _geocodeCache.set(cacheKey, null);
+        return null;
+      }
+    }
 
     // build the wrapped street-address line: "Jalan X, Kecamatan, Kota, Provinsi Kodepos, Negara"
     const addrParts = [];
@@ -76,9 +113,9 @@ async function reverseGeocode(lat, lng, timeoutMs) {
       city,
       province,
       country: countryName,
-      countryCode: a.CountryCode || '',
-      flagIso2: countryInfo ? countryInfo.iso2 : null,
-      address: addrParts.join(', ')
+      countryCode: a.CountryCode || (flagIso2 === 'id' ? 'IDN' : ''),
+      flagIso2,
+      address: addrParts.join(', ') || countryName
     };
 
     _geocodeCache.set(cacheKey, result);
