@@ -526,7 +526,28 @@
               <span>Suhu &amp; angin (cuaca historis)</span>
             </label>
           </div>
-          <p class="hint" style="margin-top:0;">Isi otomatis data yang masih kosong dari koordinat (Template 1 &amp; 2) — gratis, butuh internet, tidak pernah menimpa data CSV yang sudah kamu isi. <strong>Catatan, Kontak &amp; Arah tidak bisa dideteksi otomatis</strong>, isi manual kalau perlu.</p>
+          <p class="hint" style="grid-column:1/-1;margin-top:0;">Isi otomatis data yang masih kosong dari koordinat (Template 1 &amp; 2) — gratis, butuh internet, tidak pernah menimpa data CSV yang sudah kamu isi. <strong>Catatan, Kontak &amp; Arah tidak bisa dideteksi otomatis</strong>, isi manual kalau perlu.</p>
+
+          <p class="hint" style="grid-column:1/-1;margin-top:0;margin-bottom:0;">Tampilkan bagian mana saja di judul lokasi:</p>
+          <div class="field field-check">
+            <label class="checkbox-row">
+              <input type="checkbox" id="showGeoCity" checked>
+              <span>Kota</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="showGeoProvince" checked>
+              <span>Provinsi</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="showGeoCountry" checked>
+              <span>Negara</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" id="showGeoFlag" checked>
+              <span>Bendera Negara</span>
+            </label>
+          </div>
+          <p class="hint" style="grid-column:1/-1;margin-top:0;">Bisa dicentang sebagian saja (misal cuma Kota &amp; Negara, tanpa Provinsi). Berlaku untuk Template 1 &amp; 2, baik judul dari deteksi otomatis maupun dari kolom Kota di CSV.</p>
 
         </div>
 

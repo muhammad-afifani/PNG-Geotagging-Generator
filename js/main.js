@@ -62,6 +62,10 @@
     autoGeocode: document.getElementById('autoGeocode'),
     autoElevation: document.getElementById('autoElevation'),
     autoWeather: document.getElementById('autoWeather'),
+    showGeoCity: document.getElementById('showGeoCity'),
+    showGeoProvince: document.getElementById('showGeoProvince'),
+    showGeoCountry: document.getElementById('showGeoCountry'),
+    showGeoFlag: document.getElementById('showGeoFlag'),
     mapAspect: document.getElementById('mapAspect'),
     watermarkLang: document.getElementById('watermarkLang'),
     noteOverride: document.getElementById('noteOverride'),
@@ -148,6 +152,10 @@
     el.autoGeocode.checked = s.autoGeocode;
     el.autoElevation.checked = s.autoElevation;
     el.autoWeather.checked = s.autoWeather;
+    el.showGeoCity.checked = s.showGeoCity;
+    el.showGeoProvince.checked = s.showGeoProvince;
+    el.showGeoCountry.checked = s.showGeoCountry;
+    el.showGeoFlag.checked = s.showGeoFlag;
     el.mapAspect.value = s.mapAspect;
     el.watermarkLang.value = s.watermarkLang;
     el.noteOverride.value = s.noteOverride || '';
@@ -193,6 +201,10 @@
       autoGeocode: el.autoGeocode.checked,
       autoElevation: el.autoElevation.checked,
       autoWeather: el.autoWeather.checked,
+      showGeoCity: el.showGeoCity.checked,
+      showGeoProvince: el.showGeoProvince.checked,
+      showGeoCountry: el.showGeoCountry.checked,
+      showGeoFlag: el.showGeoFlag.checked,
       mapAspect: el.mapAspect.value,
       watermarkLang: el.watermarkLang.value,
       noteOverride: el.noteOverride.value,
@@ -265,7 +277,7 @@
       onSettingsChanged();
     });
   });
-  [el.autoGeocode, el.autoElevation, el.autoWeather].forEach(node => {
+  [el.autoGeocode, el.autoElevation, el.autoWeather, el.showGeoCity, el.showGeoProvince, el.showGeoCountry, el.showGeoFlag].forEach(node => {
     node.addEventListener('change', onSettingsChanged);
   });
   [el.noteOverride, el.contactOverride].forEach(node => node.addEventListener('input', onSettingsChanged));
@@ -843,6 +855,10 @@
       showTime: settings.showTime,
       mapAspect: settings.mapAspect,
       watermarkLang: settings.watermarkLang,
+      showGeoCity: settings.showGeoCity,
+      showGeoProvince: settings.showGeoProvince,
+      showGeoCountry: settings.showGeoCountry,
+      showGeoFlag: settings.showGeoFlag,
       geo: autoData ? autoData.geo : null,
       countryFlagImg: autoData ? autoData.flagImg : null,
       elevation: autoData ? autoData.elevation : null,
