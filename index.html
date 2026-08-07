@@ -605,10 +605,10 @@
               <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <p><strong>Drag &amp; drop foto</strong> (bisa banyak / satu folder), atau klik untuk memilih</p>
-            <input type="file" id="attachInput" accept="image/jpeg,image/jpg,image/png" multiple hidden>
+            <input type="file" id="attachInput" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,.heic,.heif" multiple hidden>
           </div>
           <div id="attachFileInfo" class="file-info hidden"></div>
-          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris data (dari Tab 1, CSV maupun input manual) berdasarkan urutan, atau berdasarkan nama file jika cocok.</p>
+          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris data (dari Tab 1, CSV maupun input manual) berdasarkan urutan, atau berdasarkan nama file jika cocok. Mendukung JPG, PNG, dan <strong>HEIC/HEIF (foto iPhone)</strong> — foto HEIC otomatis dikonversi di browser sebelum diproses.</p>
         </section>
 
         <section class="card">
@@ -701,18 +701,18 @@
         <section class="card">
           <div class="card-head">
             <span class="step-badge">A</span>
-            <h2>Upload Foto (JPG)</h2>
+            <h2>Upload Foto (JPG/HEIC)</h2>
           </div>
           <div id="geotagDropZone" class="dropzone">
             <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <p><strong>Drag &amp; drop foto JPG</strong> yang ingin ditambahkan GPS + tanggal</p>
-            <input type="file" id="geotagInput" accept="image/jpeg,image/jpg" multiple hidden>
+            <p><strong>Drag &amp; drop foto JPG/HEIC</strong> yang ingin ditambahkan GPS + tanggal</p>
+            <input type="file" id="geotagInput" accept="image/jpeg,image/jpg,image/heic,image/heif,.heic,.heif" multiple hidden>
           </div>
           <div id="geotagFileInfo" class="file-info hidden"></div>
-          <p class="hint">Fitur ini <strong>hanya menulis metadata</strong> (GPS + tanggal/waktu) ke dalam file foto asli — tidak menambahkan watermark/overlay apa pun. Cocok untuk foto inspeksi yang GPS-nya tidak terekam kamera.</p>
+          <p class="hint">Fitur ini <strong>hanya menulis metadata</strong> (GPS + tanggal/waktu) ke dalam file foto — tidak menambahkan watermark/overlay apa pun. Cocok untuk foto inspeksi yang GPS-nya tidak terekam kamera. EXIF sendiri cuma didukung format JPG, jadi foto <strong>HEIC (iPhone) otomatis dikonversi ke JPG</strong> lebih dulu sebelum ditulisi metadata — hasil downloadnya berupa file .jpg, bukan .heic.</p>
         </section>
 
         <section class="card">
@@ -833,14 +833,14 @@
               <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <p><strong>Drag &amp; drop foto</strong> di sini, atau klik untuk memilih file</p>
-            <input type="file" id="cbFileInput" accept="image/*" multiple hidden>
+            <input type="file" id="cbFileInput" accept="image/*,.heic,.heif" multiple hidden>
           </div>
           <label class="btn btn-secondary btn-block btn-file" style="margin-top:10px;">
             Atau Pilih Folder Langsung
             <input type="file" id="cbFolderInput" webkitdirectory multiple hidden>
           </label>
           <div id="cbFileInfo" class="file-info hidden"></div>
-          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari Tab 1/2/3 — tidak berbagi data apapun. Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG — sumbernya ditandai di kolom "Sumber". <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
+          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari Tab 1/2/3 — tidak berbagi data apapun. Mendukung JPG, PNG, dan HEIC (foto iPhone). Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG (termasuk HEIC — tanggal aslinya belum bisa dibaca dari format ini) — sumbernya ditandai di kolom "Sumber". <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
         </section>
       </div>
 
@@ -896,6 +896,7 @@
 <script src="libs/FileSaver.min.js"></script>
 <script src="libs/piexif.min.js"></script>
 <script src="libs/leaflet/leaflet.js"></script>
+<script src="libs/heic2any/heic2any.min.js"></script>
 <script src="js/dms.js"></script>
 <script src="js/maptile.js"></script>
 <script src="js/countries.js"></script>
@@ -905,6 +906,7 @@
 <script src="js/csv.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/exifgeo.js"></script>
+<script src="js/heicsupport.js"></script>
 <script src="js/main.js"></script>
 <script src="js/mapview.js"></script>
 <script src="js/tabs.js"></script>
