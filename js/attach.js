@@ -51,8 +51,10 @@
     // natural sort by filename so "order" matching is intuitive
     files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     state.photos = files;
+    const heicCount = window.GeoStampHeic ? files.filter(f => window.GeoStampHeic.isHeicFile(f)).length : 0;
     el.fileInfo.classList.remove('hidden');
-    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`;
+    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`
+      + (heicCount ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${heicCount} foto HEIC terdeteksi — browser ini tidak bisa membaca HEIC secara native, jadi dikonversi otomatis. Ini bisa memakan waktu detik hingga menit per foto untuk resolusi tinggi (Safari lebih cepat karena punya dukungan HEIC bawaan).</span>` : '');
     refresh();
     renderPreview();
   }
@@ -106,14 +108,15 @@
   }
 
   // ---------- load a File into an HTMLImageElement ----------
-  // HEIC/HEIF (iPhone photos) can't be decoded by <img>/canvas in any
-  // browser, so convert to JPEG via heicsupport.js first — everything
-  // downstream (canvas drawing, output format) is unaffected since
-  // this tab already always re-encodes to JPG/PNG regardless of input.
-  async function loadImageFromFile(file) {
-    const usable = window.GeoStampHeic ? await window.GeoStampHeic.toProcessableFile(file) : file;
+  // Tries the browser's native decoder first (instant — works for
+  // every format, including HEIC on Safari specifically), and only
+  // falls back to the slow HEIC->JPEG WASM conversion (heicsupport.js)
+  // when that fails. onStatus('converting') lets callers show a
+  // "this may take a while" message during that slow fallback.
+  async function loadImageFromFile(file, onStatus) {
+    if (window.GeoStampHeic) return window.GeoStampHeic.loadImageElement(file, onStatus);
     return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(usable);
+      const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => { resolve({ img, url }); };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gagal memuat foto ' + file.name)); };
@@ -122,8 +125,8 @@
   }
 
   // ---------- compose overlay onto a photo ----------
-  async function composePhoto(photo, row, settings) {
-    const { img, url } = await loadImageFromFile(photo);
+  async function composePhoto(photo, row, settings, onStatus) {
+    const { img, url } = await loadImageFromFile(photo, onStatus);
     try {
       const canvas = document.createElement('canvas');
       canvas.width = img.naturalWidth;
@@ -179,8 +182,13 @@
     const photo = state.photos[0];
     const row = rowForPhoto(photo, 0, rows);
     if (!row) return;
+    el.previewHint.textContent = `Memuat ${photo.name}…`;
     try {
-      const { canvas } = await composePhoto(photo, row, settings);
+      const { canvas } = await composePhoto(photo, row, settings, (status) => {
+        if (status === 'converting' && myToken === previewToken) {
+          el.previewHint.textContent = `Mengonversi foto HEIC "${photo.name}"… (bisa memakan waktu untuk foto resolusi tinggi, mohon tunggu)`;
+        }
+      });
       if (myToken !== previewToken) return;
       const pc = el.previewCanvas;
       pc.width = canvas.width;
@@ -229,9 +237,18 @@
         const row = rowForPhoto(photo, i, rows);
         if (!row) continue;
 
+        // set BEFORE compose starts (not after) so a slow HEIC
+        // conversion doesn't leave stale progress text sitting there
+        // looking frozen for up to a minute or more
+        el.progressText.textContent = `Memproses ${i + 1}/${total} foto…`;
+
         let composed;
         try {
-          composed = await composePhoto(photo, row, settings);
+          composed = await composePhoto(photo, row, settings, (status) => {
+            if (status === 'converting') {
+              el.progressText.textContent = `Memproses ${i + 1}/${total} foto — mengonversi HEIC (bisa beberapa detik–menit)…`;
+            }
+          });
         } catch (e) {
           console.error('compose failed', photo.name, e);
           continue;

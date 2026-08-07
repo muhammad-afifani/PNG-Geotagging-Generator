@@ -39,7 +39,13 @@ const DEFAULT_SETTINGS = {
   // only fills in fields the CSV/manual entry left empty:
   autoGeocode: true,     // fill missing city/address via reverse geocoding
   autoElevation: false,  // fill missing "Ketinggian" via Open-Meteo elevation
-  autoWeather: false     // fill missing "Suhu"/"Angin" via Open-Meteo weather
+  autoWeather: false,    // fill missing "Suhu"/"Angin" via Open-Meteo weather
+
+  // which parts of the location title are drawn (Template 1 & 2 alike)
+  showGeoCity: true,
+  showGeoProvince: true,
+  showGeoCountry: true,
+  showGeoFlag: true
 };
 
 function loadSettings() {

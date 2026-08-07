@@ -5,6 +5,31 @@
    ========================================================= */
 
 /**
+ * Build the location title text ("Kota, Provinsi, Negara") from a row
+ * and its resolved geo data, honoring the showGeoCity/Province/Country
+ * toggles so each part can be independently hidden. Shared by both
+ * templates so the toggles behave identically everywhere.
+ *
+ * Falls back to the CSV's own Lokasi/Project Name column when nothing
+ * toggled-on produced any text (either the toggles are all off, or
+ * there's simply no city/province/country resolved for this row) —
+ * Template 1's title line always occupies space, so it needs SOME
+ * fallback rather than going empty and leaving an odd gap.
+ */
+function buildGeoTitleText(row, geo, opts) {
+  const showCity = opts.showGeoCity !== false;
+  const showProvince = opts.showGeoProvince !== false;
+  const showCountry = opts.showGeoCountry !== false;
+  const cityVal = row.city || geo.city; // CSV data always wins over auto-detected, same rule as everywhere else
+  const parts = [];
+  if (showCity && cityVal) parts.push(cityVal);
+  if (showProvince && geo.province) parts.push(geo.province);
+  if (showCountry && geo.country) parts.push(geo.country);
+  if (parts.length) return parts.join(', ');
+  return row.location || '';
+}
+
+/**
  * Format a date string according to the chosen display format.
  * @param {string} dateStr - raw date value from CSV (various formats accepted)
  * @param {string} formatKey - "short" | "long" | "iso" | "id"
@@ -542,16 +567,15 @@ function renderOverlayClassic(canvas, row, opts) {
 
   let cursorY = boxY + padTop;
 
-  // City / main location line (bold, large) — falls back to the
-  // reverse-geocoded city (opts.geo) when the CSV/manual entry didn't
-  // provide one, so "Deteksi Otomatis dari Koordinat" also benefits
-  // Template 1, not just Template 2.
+  // City / main location line (bold, large) — "Kota, Provinsi, Negara"
+  // built from the CSV row and/or reverse-geocoded data (opts.geo), with
+  // each part independently togglable via opts.showGeoCity/Province/Country.
   const geo = opts.geo || {};
   const cityFont = Math.round(38 * fontScale);
   ctx.font = `700 ${cityFont}px Inter, Arial, sans-serif`;
-  const cityLine = row.city || row.location || geo.city || '';
+  const cityLine = buildGeoTitleText(row, geo, opts);
   cursorY += cityFont * 0.85;
-  const flagImg = opts.countryFlagImg;
+  const flagImg = opts.showGeoFlag !== false ? opts.countryFlagImg : null;
   const flagH = cityFont * 0.6;
   const flagW = flagImg ? flagH * (flagImg.width / flagImg.height) : 0;
   const flagGap = flagImg ? 8 * scale : 0;
@@ -772,8 +796,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
 
   // ---- resolve content up front (drives box height below) ----
   const geo = opts.geo || {};
-  const titleParts = [geo.city || row.city, geo.province, geo.country].filter(Boolean);
-  const titleText = titleParts.length ? titleParts.join(', ') : (row.city || row.location || '');
+  const titleText = buildGeoTitleText(row, geo, opts);
   const addressText = geo.address || row.address || '';
   const noteText = row.note || '';
   const contactText = row.phone || '';
@@ -924,7 +947,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
 
   // Title + flag
   ctx.font = `700 ${titleFont}px Inter, Arial, sans-serif`;
-  const flagImg = opts.countryFlagImg;
+  const flagImg = opts.showGeoFlag !== false ? opts.countryFlagImg : null;
   const flagH = titleFont * 0.6;
   const flagW = flagImg ? flagH * (flagImg.width / flagImg.height) : 0;
   const flagGap = flagImg ? 8 * scale : 0;

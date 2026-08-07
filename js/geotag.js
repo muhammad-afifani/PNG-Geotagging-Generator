@@ -47,8 +47,10 @@
     if (!files.length) { alert('Hanya file JPG atau HEIC yang didukung untuk penulisan metadata EXIF.'); return; }
     files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     state.photos = files;
+    const heicCount = window.GeoStampHeic ? files.filter(f => window.GeoStampHeic.isHeicFile(f)).length : 0;
     el.fileInfo.classList.remove('hidden');
-    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`;
+    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`
+      + (heicCount ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${heicCount} foto HEIC terdeteksi — dikonversi otomatis ke JPG sebelum ditulisi metadata (EXIF cuma ada di struktur file JPG). Ini bisa memakan waktu detik hingga menit per foto untuk resolusi tinggi.</span>` : '');
     refresh();
   }
 
@@ -108,6 +110,11 @@
       for (let i = 0; i < total; i++) {
         const photo = state.photos[i];
 
+        // set BEFORE the (possibly slow, for HEIC) work starts, not
+        // after, so a long conversion doesn't leave stale progress
+        // text sitting there looking frozen for up to a minute or more
+        el.progressText.textContent = `Memproses ${i + 1}/${total}…`;
+
         // determine coord + date for this photo
         let lat, lng, dateObj;
         if (useCsv) {
@@ -129,7 +136,13 @@
           // EXIF only exists as a concept for JPEG's file structure, so
           // HEIC input (iPhone photos) is converted to JPEG first — the
           // ZIP will contain a .jpg for those, not the original .heic.
-          const jpegPhoto = window.GeoStampHeic ? await window.GeoStampHeic.toProcessableFile(photo) : photo;
+          const jpegPhoto = window.GeoStampHeic
+            ? await window.GeoStampHeic.toProcessableFile(photo, (status) => {
+                if (status === 'converting') {
+                  el.progressText.textContent = `Memproses ${i + 1}/${total} — mengonversi HEIC (bisa beberapa detik–menit)…`;
+                }
+              })
+            : photo;
           const altitudeVal = el.altitude.value.trim() !== '' ? parseFloat(el.altitude.value) : undefined;
           const res = await writeGeotagToJpeg(jpegPhoto, {
             lat, lng, date: dateObj, stripOthers: el.clean.checked,

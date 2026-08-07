@@ -178,8 +178,10 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - **Deteksi Otomatis dari Koordinat** (opsional, berlaku untuk Template 1 & 2): kalau kolom Kota/Alamat/Ketinggian/Suhu/Angin kosong di CSV, tool bisa mengisinya otomatis dari titik Latitude/Longitude — lokasi & alamat lewat reverse geocoding (Esri), ketinggian & cuaca historis lewat Open-Meteo. Semua gratis tanpa API key, opsional (bisa dicentang/tidak), dan tidak pernah menimpa data yang sudah kamu isi manual
 - **2 preset template watermark** (Klasik / GPS Map Camera) yang bisa dipilih tanpa saling menimpa pengaturan, siap ditambah template baru ke depannya
 - Template 1 & 2: judul kota/provinsi/negara + bendera negara, dengan baris info geografis (suhu/angin/ketinggian/arah) opsional memakai ikon berwarna (bukan hitam-putih)
+- **Tampilan judul lokasi bisa diatur**: 4 checkbox terpisah (Kota / Provinsi / Negara / Bendera Negara) untuk memilih bagian mana saja yang tampil di judul — bisa dicentang sebagian saja (misal cuma Kota & Negara), berlaku untuk Template 1 & 2 sekaligus
 - Template 2: opsi **Bahasa Watermark** (English / Indonesia) untuk nama hari dan notasi lintang-bujur (LU/LS/BT/BB)
 - **Tab 4 — Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam dari sekumpulan foto (EXIF atau file system), dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV
+- **Foto HEIC/HEIF (iPhone)** didukung di Tab 2 & Tab 3 — decode native instan di Safari, fallback otomatis ke konversi WASM di browser lain (lihat "Dukungan Format HEIC/HEIF")
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
 - Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar)
@@ -201,7 +203,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - Cuaca historis (suhu/angin) dari Open-Meteo hanya tersedia untuk rentang tanggal yang didukung arsipnya (umumnya tidak termasuk beberapa hari paling akhir) — kalau tanggal fotonya di luar rentang itu, tool otomatis coba ambil cuaca hari ini sebagai perkiraan; kalau tetap gagal, baris itu dilewati tanpa menghentikan proses.
 - **Catatan, Kontak, dan Arah/bearing tidak bisa dideteksi otomatis** — Catatan &amp; Kontak adalah data internal (tidak ada sumbernya di internet), dan Arah/bearing adalah arah kamera menghadap saat difoto yang dibaca dari sensor kompas HP saat pemotretan — informasi itu tidak tersimpan di mana pun setelah fotonya jadi, jadi memang harus diisi manual kalau dibutuhkan.
 - Peta interaktif di kartu "Peta & Kalender Data" juga butuh koneksi internet untuk memuat gambar tile Jalan/Satelit (sama seperti mode peta di pengaturan overlay); tanpa internet, pin/drag-koordinat dan kalender tetap berfungsi normal, hanya latar peta yang kosong.
-- **Foto HEIC (iPhone)** didukung di Tab 2 & Tab 3 lewat konversi otomatis ke JPEG di browser (lihat "Dukungan Format HEIC/HEIF") — konversinya tidak butuh internet, tapi bisa memakan beberapa detik per foto untuk resolusi besar. Tab 4 belum bisa membaca tanggal EXIF asli dari dalam file HEIC (fallback ke tanggal file, sama seperti foto non-JPG lainnya).
+- **Foto HEIC (iPhone)** didukung di Tab 2 & Tab 3 (lihat "Dukungan Format HEIC/HEIF") — instan di Safari (decode native), tapi di browser lain (Chrome/Firefox/Edge) konversinya lewat WebAssembly dan **bisa memakan waktu dari beberapa detik sampai lebih dari semenit per foto** untuk resolusi tinggi (12+ MP) — status "Mengonversi HEIC..." ditampilkan selama proses berlangsung, ini normal bukan macet. Tab 4 belum bisa membaca tanggal EXIF asli dari dalam file HEIC (fallback ke tanggal file, sama seperti foto non-JPG lainnya).
 
 
 ---
@@ -290,14 +292,18 @@ Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto
 
 ## Dukungan Format HEIC/HEIF (Foto iPhone)
 
-iPhone (iOS 11+) menyimpan foto dalam format **HEIC** secara default — format yang tidak bisa dibuka langsung oleh browser mana pun (Chrome, Firefox, Edge) lewat `<img>` atau `<canvas>`. Tab 2 dan Tab 3 menangani ini secara otomatis lewat [`heic2any`](https://github.com/alexcorvi/heic2any) (MIT license, dibundel lokal di `libs/heic2any/`, tidak pernah fetch dari CDN) — sebuah decoder HEIC berbasis WebAssembly (libheif) yang berjalan 100% di browser:
+iPhone (iOS 11+) menyimpan foto dalam format **HEIC** secara default. Tab 2 dan Tab 3 menanganinya dengan strategi dua lapis:
 
-- **Tab 2 (Tempel ke Foto):** foto HEIC dikonversi ke JPEG di memori sebelum watermark digambar, lalu diekspor sesuai Format Output yang dipilih (JPG atau PNG) — sama seperti alur untuk foto JPG/PNG biasa, tidak ada langkah tambahan yang perlu dilakukan.
-- **Tab 3 (Geotag Metadata):** foto HEIC dikonversi ke JPEG lebih dulu (karena EXIF adalah konsep khusus struktur file JPEG, tidak kompatibel dengan struktur HEIC), baru metadata GPS+tanggal ditulis ke JPEG hasil konversi. File yang diunduh berekstensi `.jpg`, bukan `.heic`.
+1. **Coba decode native browser dulu** — tercepat (instan), dan ini yang membuat **Safari langsung bisa** karena Safari punya dukungan HEIC bawaan di level OS. Berlaku otomatis, tidak perlu pengaturan apa pun.
+2. **Kalau native gagal** (kasus paling umum: Chrome, Firefox, Edge — belum ada satu pun yang bisa decode HEIC lewat `<img>`/`<canvas>`), otomatis fallback ke [`heic2any`](https://github.com/alexcorvi/heic2any) (MIT license, dibundel lokal di `libs/heic2any/`, tidak pernah fetch dari CDN) — decoder HEIC berbasis WebAssembly (libheif) yang berjalan 100% di browser, tanpa upload ke server mana pun.
+
+Detail per tab:
+- **Tab 2 (Tempel ke Foto):** foto HEIC didecode (native atau via heic2any) sebelum watermark digambar, lalu diekspor sesuai Format Output yang dipilih (JPG atau PNG) — sama seperti alur untuk foto JPG/PNG biasa.
+- **Tab 3 (Geotag Metadata):** foto HEIC **selalu** dikonversi lewat heic2any ke JPEG dulu — walaupun di Safari (karena EXIF adalah konsep khusus struktur file JPEG; kemampuan Safari menampilkan HEIC secara native tidak membantu di sini, bytes aslinya tetap HEIC, bukan JPEG). File yang diunduh berekstensi `.jpg`, bukan `.heic`.
 - **Tab 4 (Buat CSV dari Foto):** **belum** membaca tanggal EXIF asli dari dalam file HEIC (butuh parser struktur HEIF yang terpisah dari `heic2any`, yang fokusnya cuma konversi gambar, bukan metadata) — foto HEIC otomatis memakai fallback tanggal-file-dimodifikasi (badge "File System") seperti foto non-JPG lainnya. Koreksi manual di tabel kalau tanggal aslinya berbeda.
 - **Tab 1** tidak memproses foto sama sekali (hanya CSV), jadi tidak terpengaruh format foto apa pun.
 
-Konversi berjalan sepenuhnya di browser (tidak ada upload ke server), tapi karena melibatkan decoding gambar resolusi penuh lewat WebAssembly, foto HEIC beresolusi besar (foto iPhone modern bisa 12–48 MP) bisa memakan waktu beberapa detik per foto — progress bar yang sudah ada di Tab 2/3 tetap berjalan normal selama proses ini.
+**Soal kecepatan (penting):** jalur `heic2any` (jalur non-Safari) melibatkan decoding gambar resolusi penuh lewat WebAssembly tanpa akselerasi hardware — untuk foto iPhone modern (12–48 MP), ini **bisa memakan waktu dari beberapa detik sampai lebih dari satu menit per foto**, tergantung resolusi dan performa perangkat. Ini normal, bukan macet — Tab 2/3 menampilkan status "Mengonversi HEIC..." (di preview maupun progress bar) selama proses ini berlangsung, dan langsung terlihat sesaat setelah foto dipilih supaya tidak terkesan aplikasi berhenti merespons. Untuk banyak foto HEIC sekaligus, total waktunya berakumulasi (foto diproses satu per satu) — pertimbangkan proses bertahap untuk batch besar, atau pakai Safari kalau tersedia untuk hasil instan.
 
 ## Kenapa Tool Ini Dibuat
 
