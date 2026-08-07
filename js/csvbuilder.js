@@ -43,7 +43,7 @@
   el.folderInput.addEventListener('change', (e) => { if (e.target.files.length) handleFiles(e.target.files); });
 
   async function handleFiles(fileList) {
-    const files = Array.from(fileList).filter(f => (f.type || '').startsWith('image/') || /\.(jpe?g|png)$/i.test(f.name));
+    const files = Array.from(fileList).filter(f => (f.type || '').startsWith('image/') || /\.(jpe?g|png|hei[cf])$/i.test(f.name));
     if (!files.length) { alert('Tidak ada file gambar yang terdeteksi.'); return; }
     files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 

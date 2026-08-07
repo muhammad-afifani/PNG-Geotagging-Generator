@@ -46,7 +46,7 @@
 
   function handleFiles(fileList) {
     const files = Array.from(fileList).filter(f =>
-      /\.(jpe?g|png)$/i.test(f.name) || (f.type || '').startsWith('image/'));
+      /\.(jpe?g|png|hei[cf])$/i.test(f.name) || (f.type || '').startsWith('image/'));
     if (!files.length) return;
     // natural sort by filename so "order" matching is intuitive
     files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -106,9 +106,14 @@
   }
 
   // ---------- load a File into an HTMLImageElement ----------
-  function loadImageFromFile(file) {
+  // HEIC/HEIF (iPhone photos) can't be decoded by <img>/canvas in any
+  // browser, so convert to JPEG via heicsupport.js first — everything
+  // downstream (canvas drawing, output format) is unaffected since
+  // this tab already always re-encodes to JPG/PNG regardless of input.
+  async function loadImageFromFile(file) {
+    const usable = window.GeoStampHeic ? await window.GeoStampHeic.toProcessableFile(file) : file;
     return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
+      const url = URL.createObjectURL(usable);
       const img = new Image();
       img.onload = () => { resolve({ img, url }); };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gagal memuat foto ' + file.name)); };

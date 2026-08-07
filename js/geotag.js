@@ -41,12 +41,14 @@
   el.input.addEventListener('change', () => handleFiles(el.input.files));
 
   function handleFiles(fileList) {
-    const files = Array.from(fileList).filter(f => /\.jpe?g$/i.test(f.name) || (f.type || '').includes('jpeg'));
-    if (!files.length) { alert('Hanya file JPG yang didukung untuk penulisan metadata EXIF.'); return; }
+    const files = Array.from(fileList).filter(f =>
+      /\.jpe?g$/i.test(f.name) || (f.type || '').includes('jpeg') ||
+      (window.GeoStampHeic && window.GeoStampHeic.isHeicFile(f)));
+    if (!files.length) { alert('Hanya file JPG atau HEIC yang didukung untuk penulisan metadata EXIF.'); return; }
     files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     state.photos = files;
     el.fileInfo.classList.remove('hidden');
-    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto JPG dimuat.`;
+    el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`;
     refresh();
   }
 
@@ -124,8 +126,12 @@
         }
 
         try {
+          // EXIF only exists as a concept for JPEG's file structure, so
+          // HEIC input (iPhone photos) is converted to JPEG first — the
+          // ZIP will contain a .jpg for those, not the original .heic.
+          const jpegPhoto = window.GeoStampHeic ? await window.GeoStampHeic.toProcessableFile(photo) : photo;
           const altitudeVal = el.altitude.value.trim() !== '' ? parseFloat(el.altitude.value) : undefined;
-          const res = await writeGeotagToJpeg(photo, {
+          const res = await writeGeotagToJpeg(jpegPhoto, {
             lat, lng, date: dateObj, stripOthers: el.clean.checked,
             altitude: (altitudeVal !== undefined && !isNaN(altitudeVal)) ? altitudeVal : undefined,
             description: el.description.value.trim() || undefined,
