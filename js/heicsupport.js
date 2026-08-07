@@ -11,21 +11,21 @@
       format, and is what makes Safari instant for HEIC too — no need
       to special-case it).
    2) Only if that fails (HEIC on Chrome/Firefox/Edge, i.e. most
-      users) fall back to heic2any (bundled locally in libs/heic2any/,
-      MIT license, wraps libheif compiled to WASM, fully self-
-      contained — no CDN fetch at runtime). This path is genuinely
-      slow — a real full-resolution iPhone photo (12+ MP) can take
-      anywhere from several seconds to over a minute to decode in
-      pure-WASM software HEVC, since there's no hardware acceleration
-      available to JS. Callers MUST surface a "converting, this can
-      take a while" status via the onStatus callback, or the wait
-      reads as the app being frozen/broken.
+      users) fall back to libheif-js (bundled locally in libs/libheif/,
+      LGPL-3.0, the actively-maintained official JS/WASM build of the
+      libheif C library — fully self-contained, no CDN fetch at
+      runtime). This path is genuinely slow — a real full-resolution
+      iPhone photo (12+ MP) can take anywhere from several seconds to
+      over a minute to decode in pure-WASM software HEVC, since
+      there's no hardware acceleration available to JS. Callers MUST
+      surface a "converting, this can take a while" status via the
+      onStatus callback, or the wait reads as the app being frozen.
 
-   Note: heic2any does not carry over the original file's EXIF, so
-   toProcessableFile() is only appropriate where the pipeline doesn't
-   depend on reading EXIF that was already inside the HEIC (Tab 4's
-   date-extraction already has its own file-timestamp fallback for
-   exactly this case).
+   Note: this conversion does not carry over the original file's EXIF,
+   so toProcessableFile() is only appropriate where the pipeline
+   doesn't depend on reading EXIF that was already inside the HEIC
+   (Tab 4's date-extraction already has its own file-timestamp
+   fallback for exactly this case).
    ========================================================= */
 (function () {
   'use strict';
@@ -64,31 +64,106 @@
     });
   }
 
+  // libheif's WASM module is expensive to instantiate — reuse a single
+  // initialized instance across every HEIC file in a batch instead of
+  // re-instantiating per file.
+  let _libheifModulePromise = null;
+  function getLibheifModule() {
+    if (!_libheifModulePromise) {
+      if (typeof libheif !== 'function') {
+        return Promise.reject(new Error('Dukungan HEIC tidak tersedia (library gagal dimuat).'));
+      }
+      // normalize to a real Promise -- libheif() can return a thenable
+      // that isn't a full native Promise (lacks .catch etc.)
+      _libheifModulePromise = Promise.resolve(libheif());
+    }
+    return _libheifModulePromise;
+  }
+
+  function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Gagal membaca file ' + file.name));
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
   /**
-   * Converts a HEIC/HEIF Blob to a JPEG File via heic2any, with a
+   * Converts a HEIC/HEIF Blob to a JPEG File via libheif-js, with a
    * generous timeout so a stuck/corrupt file fails with a clear error
-   * instead of hanging forever. Rejects with an Indonesian message on
-   * any failure.
+   * instead of hanging forever. Rejects with a specific, actionable
+   * Indonesian message identifying exactly which step failed (reading
+   * the file, decoding it, or rendering pixels) rather than one generic
+   * "conversion failed" for every possible cause.
    */
   async function convertHeicToJpeg(file) {
-    if (typeof heic2any !== 'function') {
-      throw new Error('Dukungan HEIC tidak tersedia (library gagal dimuat).');
-    }
-    let timer;
-    try {
-      const conversion = heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
-      const timeout = new Promise((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Konversi HEIC memakan waktu terlalu lama (lebih dari 3 menit) — coba foto dengan resolusi lebih kecil.')),
-          HEIC_CONVERT_TIMEOUT_MS
-        );
+    const work = (async () => {
+      const mod = await getLibheifModule().catch((e) => {
+        throw new Error(`${(e && e.message) || 'Library HEIC gagal dimuat'}`);
       });
-      const result = await Promise.race([conversion, timeout]);
-      const outBlob = Array.isArray(result) ? result[0] : result;
+
+      let bytes;
+      try {
+        bytes = new Uint8Array(await readFileAsArrayBuffer(file));
+      } catch (e) {
+        throw new Error(`Gagal membaca file "${file.name}" — ${(e && e.message) || 'file mungkin rusak'}.`);
+      }
+
+      let images;
+      try {
+        const decoder = new mod.HeifDecoder();
+        images = decoder.decode(bytes);
+      } catch (e) {
+        throw new Error(`Gagal decode HEIC "${file.name}" — ${(e && e.message) || 'format HEIC ini mungkin tidak didukung'}.`);
+      }
+      if (!images || !images.length) {
+        throw new Error(`Tidak ada gambar yang ditemukan di dalam file "${file.name}" — file mungkin rusak atau bukan HEIC/HEIF yang valid.`);
+      }
+
+      const image = images[0];
+      const width = image.get_width();
+      const height = image.get_height();
+      if (!width || !height) {
+        throw new Error(`Dimensi gambar tidak valid untuk "${file.name}" (${width}x${height}).`);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(width, height);
+
+      try {
+        await new Promise((resolve, reject) => {
+          image.display(imageData, (displayData) => {
+            if (!displayData) { reject(new Error('proses render piksel gagal (kemungkinan varian HEIC yang tidak didukung)')); return; }
+            resolve();
+          });
+        });
+      } catch (e) {
+        throw new Error(`Gagal merender foto "${file.name}" — ${(e && e.message) || 'error tidak diketahui'}.`);
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+      if (!blob) {
+        throw new Error(`Gagal mengekspor hasil konversi "${file.name}" ke JPEG.`);
+      }
+
       const newName = file.name.replace(/\.hei[cf]$/i, '.jpg');
-      return new File([outBlob], newName, { type: 'image/jpeg' });
-    } catch (e) {
-      throw new Error(`Gagal mengonversi foto HEIC "${file.name}" — ${(e && e.message) || 'file mungkin rusak atau formatnya tidak didukung'}.`);
+      return new File([blob], newName, { type: 'image/jpeg' });
+    })();
+
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`Konversi HEIC "${file.name}" memakan waktu terlalu lama (lebih dari 3 menit) — coba foto dengan resolusi lebih kecil.`)),
+        HEIC_CONVERT_TIMEOUT_MS
+      );
+    });
+    try {
+      return await Promise.race([work, timeout]);
     } finally {
       clearTimeout(timer);
     }
