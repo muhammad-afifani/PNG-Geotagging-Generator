@@ -104,7 +104,7 @@ js/
   settings.js   -> LocalStorage + export/import preset JSON
   main.js       -> controller UI, preview, batching & ZIP generation
   mapview.js    -> peta interaktif (Leaflet) + kalender tanggal import di Tab 1
-  csvbuilder.js -> Tab 4, tool ekstraksi nama file/tanggal dari foto (berdiri sendiri)
+  csvbuilder.js -> Tab 4, tool ekstraksi nama file/tanggal/GPS dari foto (berdiri sendiri)
   heicsupport.js -> konversi foto HEIC/HEIF (iPhone) -> JPEG, dipakai Tab 2 & Tab 3
 libs/
   papaparse.min.js
@@ -180,7 +180,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - Template 1 & 2: judul kota/provinsi/negara + bendera negara, dengan baris info geografis (suhu/angin/ketinggian/arah) opsional memakai ikon berwarna (bukan hitam-putih)
 - **Tampilan judul lokasi bisa diatur**: 4 checkbox terpisah (Kota / Provinsi / Negara / Bendera Negara) untuk memilih bagian mana saja yang tampil di judul — bisa dicentang sebagian saja (misal cuma Kota & Negara), berlaku untuk Template 1 & 2 sekaligus. Kalau Kota tidak ditemukan (umum untuk titik di laut/selat), judul otomatis "naik" memakai Provinsi atau Negara yang tersedia, bukan kosong sama sekali
 - Template 2: opsi **Bahasa Watermark** (English / Indonesia) untuk nama hari dan notasi lintang-bujur (LU/LS/BT/BB)
-- **Tab 4 — Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam dari sekumpulan foto (EXIF atau file system), dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV
+- **Tab 4 — Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam (EXIF atau file system) + koordinat GPS & lokasi (kalau ada di EXIF-nya) dari sekumpulan foto, dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV, dan tombol Reset untuk memproses file/folder lain
 - **Foto HEIC/HEIF (iPhone)** didukung di Tab 2 & Tab 3 — decode native instan di Safari, fallback otomatis ke konversi WASM (libheif resmi) di browser lain, biasanya hanya beberapa detik per foto (lihat "Dukungan Format HEIC/HEIF")
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
@@ -286,10 +286,12 @@ Cara pakai:
 2. Untuk tiap foto, tanggal & jam diambil otomatis:
    - Dari metadata **EXIF** (`DateTimeOriginal`) kalau filenya JPG dan datanya ada — ditandai badge hijau **EXIF**.
    - Kalau tidak ada (bukan JPG, atau EXIF-nya kosong/hilang — termasuk **HEIC**, lihat catatan di bawah), fallback ke **tanggal terakhir file dimodifikasi** di file system — ditandai badge kuning **File System**, karena ini cuma perkiraan, bukan waktu pemotretan asli.
-3. Tabel hasil ekstraksi **bisa diedit langsung** — klik kolom Tanggal/Waktu tiap baris untuk mengoreksi manual, terutama baris bertanda "File System".
-4. Klik **Download CSV** untuk mengunduh hasilnya — kolom CSV sama persis dengan format Tab 1 (`Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat`), dengan Latitude/Longitude/Lokasi/Alamat sengaja dikosongkan untuk diisi manual (lewat Excel/Google Sheets, atau lewat "Deteksi Otomatis dari Koordinat" di Tab 1 kalau koordinatnya sudah diisi).
+3. Kalau fotonya JPG dan punya **GPS di EXIF** (umum untuk foto dari aplikasi seperti GPS Map Camera — koordinatnya tetap tersimpan di metadata walau cuma teks watermark yang kelihatan di gambarnya), kolom **Latitude/Longitude otomatis terisi**, dan **Lokasi** otomatis dideteksi dari koordinat itu lewat reverse-geocoding yang sama dengan "Deteksi Otomatis dari Koordinat" di Tab 1 (perlu koneksi internet; kalau gagal/offline, kolom itu dikosongkan seperti biasa).
+4. Tabel hasil ekstraksi **bisa diedit langsung** — klik kolom Tanggal/Waktu/Latitude/Longitude/Lokasi tiap baris untuk mengoreksi manual, terutama baris bertanda "File System" atau yang GPS/Lokasi-nya masih kosong.
+5. Klik **Download CSV** untuk mengunduh hasilnya — kolom CSV sama persis dengan format Tab 1 (`Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat`). Kolom yang tidak berhasil terisi otomatis (misalnya Alamat, atau semuanya kalau fotonya tidak punya GPS EXIF) dikosongkan untuk diisi manual lewat Excel/Google Sheets.
+6. Klik **Reset** (di pojok kanan atas kartu "Hasil Ekstraksi") kapan saja untuk mengosongkan tabel & input file, lalu upload file/folder lain — tidak perlu reload halaman.
 
-Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto tidak pernah diunggah ke mana pun.
+Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto tidak pernah diunggah ke mana pun. Reverse-geocoding koordinat GPS memang butuh koneksi internet (lewat layanan Esri yang sama dipakai Tab 1), tapi hanya mengirim angka koordinat, bukan fotonya.
 
 ## Dukungan Format HEIC/HEIF (Foto iPhone)
 
@@ -301,7 +303,7 @@ iPhone (iOS 11+) menyimpan foto dalam format **HEIC** secara default. Tab 2 dan 
 Detail per tab:
 - **Tab 2 (Tempel ke Foto):** foto HEIC didecode (native atau via libheif-js) sebelum watermark digambar, lalu diekspor sesuai Format Output yang dipilih (JPG atau PNG) — sama seperti alur untuk foto JPG/PNG biasa.
 - **Tab 3 (Geotag Metadata):** foto HEIC **selalu** dikonversi lewat libheif-js ke JPEG dulu — walaupun di Safari (karena EXIF adalah konsep khusus struktur file JPEG; kemampuan Safari menampilkan HEIC secara native tidak membantu di sini, bytes aslinya tetap HEIC, bukan JPEG). File yang diunduh berekstensi `.jpg`, bukan `.heic`.
-- **Tab 4 (Buat CSV dari Foto):** **belum** membaca tanggal EXIF asli dari dalam file HEIC (perlu parser struktur HEIF terpisah yang fokus pada metadata, bukan konversi gambar) — foto HEIC otomatis memakai fallback tanggal-file-dimodifikasi (badge "File System") seperti foto non-JPG lainnya. Koreksi manual di tabel kalau tanggal aslinya berbeda.
+- **Tab 4 (Buat CSV dari Foto):** **belum** membaca tanggal maupun GPS EXIF asli dari dalam file HEIC (perlu parser struktur HEIF terpisah yang fokus pada metadata, bukan konversi gambar) — foto HEIC otomatis memakai fallback tanggal-file-dimodifikasi (badge "File System") seperti foto non-JPG lainnya, dan kolom Latitude/Longitude/Lokasi-nya tetap kosong. Koreksi manual di tabel kalau datanya berbeda/dibutuhkan.
 - **Tab 1** tidak memproses foto sama sekali (hanya CSV), jadi tidak terpengaruh format foto apa pun.
 
 **Soal kecepatan:** jalur WASM (non-Safari) tetap melibatkan decoding gambar resolusi penuh tanpa akselerasi hardware, jadi ada jeda yang terasa — namun biasanya cuma **beberapa detik per foto** untuk resolusi standar (12 MP), bertambah untuk foto beresolusi sangat tinggi (48 MP). Tab 2/3 menampilkan status "Mengonversi HEIC..." (di preview maupun progress bar) selama proses ini berlangsung, dan langsung terlihat sesaat setelah foto dipilih supaya tidak terkesan aplikasi berhenti merespons. Kalau konversi gagal (file rusak/format tidak didukung), pesan errornya sekarang spesifik menyebutkan tahap mana yang gagal, bukan pesan generik. Untuk banyak foto HEIC sekaligus, total waktunya berakumulasi (foto diproses satu per satu, bukan paralel) — pakai Safari kalau tersedia untuk hasil instan tanpa jeda konversi sama sekali.

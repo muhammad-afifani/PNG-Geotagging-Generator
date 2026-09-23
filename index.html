@@ -55,7 +55,7 @@
           <li><strong>Tab 1 — Watermark GPS.</strong> Titik mulai semua kerja. Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), atau kalau cuma mau tes beberapa foto pakai mode Input Manual satu-satu. Di sini juga kamu atur tampilan watermark (template, warna, ukuran, logo, dll), cek datanya di tabel Preview Data serta peta &amp; kalender di bawahnya, lalu generate untuk mendapat file PNG watermark transparan (satu per foto, dikumpulkan jadi satu ZIP). <u>Data, logo, dan semua pengaturan yang kamu atur di sini otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
           <li><strong>Tab 2 — Tempel ke Foto.</strong> Dipakai kalau kamu mau watermark langsung "dibakar" menyatu ke foto asli kamu (bukan file PNG terpisah). Upload foto-foto aslinya di sini; datanya (koordinat, tanggal, dst) diambil otomatis dari yang sudah diisi di Tab 1, dipasangkan per foto berdasarkan nama file atau urutan.</li>
           <li><strong>Tab 3 — Geotag Metadata.</strong> Dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF (bukan watermark yang kelihatan di foto) — hasilnya foto tetap terlihat asli/bersih, tapi kalau dicek propertinya sudah ada info lokasi &amp; tanggalnya.</li>
-          <li><strong>Tab 4 — Buat CSV dari Foto.</strong> Tool kecil yang berdiri sendiri, terpisah dari Tab 1-3. Berguna kalau foto kamu tanggal/jam pemotretannya sudah hilang atau salah: pilih folder foto, tool ini ekstrak nama file + tanggal/jam (dari EXIF kalau ada, atau dari file) ke tabel yang bisa dikoreksi manual, lalu diunduh sebagai CSV siap dipakai di Tab 1.</li>
+          <li><strong>Tab 4 — Buat CSV dari Foto.</strong> Tool kecil yang berdiri sendiri, terpisah dari Tab 1-3. Berguna kalau foto kamu tanggal/jam pemotretannya sudah hilang atau salah: pilih folder foto, tool ini ekstrak nama file + tanggal/jam (dari EXIF kalau ada, atau dari file) + koordinat GPS &amp; lokasi (kalau ada di EXIF-nya) ke tabel yang bisa dikoreksi manual, lalu diunduh sebagai CSV siap dipakai di Tab 1. Ada tombol Reset untuk mulai ulang dengan file/folder lain.</li>
         </ol>
         <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload ke Tab 1. Atau kalau tanggal/jam fotomu sudah hilang, mulai dari Tab 4 dulu untuk membuat CSV-nya.</p>
         <a class="btn btn-secondary guide-download" href="contoh-format.csv" download="contoh-format.csv">Download Contoh CSV</a>
@@ -861,7 +861,7 @@
             <input type="file" id="cbFolderInput" webkitdirectory multiple hidden>
           </label>
           <div id="cbFileInfo" class="file-info hidden"></div>
-          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari Tab 1/2/3 — tidak berbagi data apapun. Mendukung JPG, PNG, dan HEIC (foto iPhone). Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG (termasuk HEIC — tanggal aslinya belum bisa dibaca dari format ini) — sumbernya ditandai di kolom "Sumber". <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
+          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari Tab 1/2/3 — tidak berbagi data apapun. Mendukung JPG, PNG, dan HEIC (foto iPhone). Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG (termasuk HEIC — tanggal aslinya belum bisa dibaca dari format ini) — sumbernya ditandai di kolom "Sumber". Koordinat GPS di EXIF (kalau ada) juga otomatis diambil dan lokasinya dideteksi. <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
         </section>
       </div>
 
@@ -870,11 +870,12 @@
           <div class="card-head">
             <h2>Hasil Ekstraksi</h2>
             <span class="preview-tag" id="cbCount"></span>
+            <button class="btn btn-tiny" id="cbResetBtn" type="button">Reset</button>
           </div>
           <div class="data-preview-table-wrap" id="cbTableWrap" style="max-height:440px;">
             <table class="data-preview-table" id="cbTable">
               <thead>
-                <tr><th>#</th><th>Nama File</th><th>Tanggal</th><th>Waktu</th><th>Sumber</th></tr>
+                <tr><th>#</th><th>Nama File</th><th>Tanggal</th><th>Waktu</th><th>Latitude</th><th>Longitude</th><th>Lokasi</th><th>Sumber</th></tr>
               </thead>
               <tbody id="cbTableBody"></tbody>
             </table>
@@ -883,7 +884,7 @@
             <p>Pilih foto atau folder di sebelah kiri untuk mulai ekstraksi.</p>
           </div>
           <button class="btn btn-primary btn-block" id="cbDownloadBtn" type="button" disabled style="margin-top:14px;">Download CSV</button>
-          <p class="hint">CSV yang dihasilkan punya kolom yang sama dengan contoh CSV Tab 1 (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat) — kolom Latitude/Longitude/Lokasi/Alamat sengaja dikosongkan untuk kamu isi manual lewat Excel/Google Sheets, lalu upload hasilnya ke Tab 1.</p>
+          <p class="hint">CSV yang dihasilkan punya kolom yang sama dengan contoh CSV Tab 1 (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat). Kalau foto JPG-nya punya GPS di EXIF (misal dari GPS Map Camera), Latitude/Longitude otomatis terisi dan Lokasi otomatis dideteksi dari koordinatnya — kalau tidak ada, kolom itu dikosongkan untuk kamu isi manual lewat Excel/Google Sheets. Semua kolom tetap bisa dikoreksi langsung di tabel sebelum download.</p>
         </section>
       </div>
     </div>

@@ -941,9 +941,10 @@ body { min-height: 100vh; }
 }
 .dp-delete-btn:hover { color: var(--danger); background: rgba(229,98,107,0.12); }
 
-/* ---------- Tab 4: CSV builder table (inline-editable date/time) ---------- */
+/* ---------- Tab 4: CSV builder table (inline-editable date/time/GPS) ---------- */
 .data-preview-table input[type="date"],
-.data-preview-table input[type="time"] {
+.data-preview-table input[type="time"],
+.data-preview-table input[type="text"] {
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -955,9 +956,17 @@ body { min-height: 100vh; }
   min-width: 120px;
 }
 .data-preview-table input[type="date"]:focus,
-.data-preview-table input[type="time"]:focus {
+.data-preview-table input[type="time"]:focus,
+.data-preview-table input[type="text"]:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
+}
+.data-preview-table .cb-lat-input,
+.data-preview-table .cb-lng-input {
+  min-width: 90px;
+}
+.data-preview-table .cb-loc-input {
+  min-width: 160px;
 }
 
 .cb-source-badge {
