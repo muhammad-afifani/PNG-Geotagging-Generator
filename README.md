@@ -184,9 +184,9 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - **Foto HEIC/HEIF (iPhone)** didukung di Tab 2 & Tab 3 — decode native instan di Safari, fallback otomatis ke konversi WASM (libheif resmi) di browser lain, biasanya hanya beberapa detik per foto (lihat "Dukungan Format HEIC/HEIF")
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
-- Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar)
+- Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar) — atau bisa disembunyikan sepenuhnya lewat opsi **Tanpa Logo**
 - Pilihan format tanggal: short / long / ISO / Indonesia
-- Kustomisasi: opacity background, warna font, ukuran font, posisi & ukuran overlay
+- Kustomisasi: opacity background, warna font, ukuran font, **posisi overlay fleksibel** (kombinasi atas/bawah + kiri/tengah/kanan, lebar overlay yang bisa diperkecil, dan geser manual halus/"slide" untuk penempatan presisi)
 - Preview satu sample sebelum generate semua (termasuk preview peta asli)
 - Progress bar + estimasi waktu (ETA) saat generate massal
 - Rendering asynchronous & batched dengan **timeout guard di setiap langkah** (fetch peta & encode PNG) — proses tidak akan pernah macet permanen, otomatis fallback dan lanjut jika ada baris bermasalah
@@ -215,8 +215,12 @@ File `contoh-format.csv` disertakan sebagai template. Buka dengan Excel/Google S
 
 ## Pengaturan Baru
 
-- **Gaya Logo "GPS Map Camera"**: pilih Teks Putih (default, jelas di background gelap), Teks Gelap, atau Gambar Logo dari file yang diupload.
-- **Ukuran Logo Badge**: 60–160% untuk memperbesar/memperkecil badge.
+- **Gaya Logo "GPS Map Camera"**: pilih Teks Putih (default, jelas di background gelap), Teks Gelap, Gambar Logo dari file yang diupload, atau **Tanpa Logo** untuk menyembunyikan badge-nya sepenuhnya (tidak ada ruang kosong yang tersisa saat disembunyikan).
+- **Ukuran Logo Badge**: 60–160% untuk memperbesar/memperkecil badge (disembunyikan otomatis kalau Gaya Logo diset ke Tanpa Logo, karena tidak relevan).
+- **Posisi & Ukuran Overlay**: kombinasi 3 kontrol untuk menempatkan overlay di mana saja pada foto:
+  - **Posisi Vertikal** (Bawah/Atas) + **Posisi Horizontal** (Kiri/Tengah/Kanan) — kombinasikan untuk posisi apa saja, misal Bawah + Tengah untuk "rata tengah bawah". Posisi Horizontal baru kelihatan bedanya kalau overlay-nya tidak selebar penuh (lihat poin berikutnya).
+  - **Lebar Overlay Maksimal** (50–100%): perkecil dari 100% (default, selebar foto seperti sebelumnya) supaya overlay jadi kartu yang lebih ringkas dan Posisi Horizontal punya ruang untuk terlihat efeknya.
+  - **Geser Horizontal / Geser Vertikal (slide manual)** (-25% s.d. +25%): geser halus dari titik Posisi Vertikal/Horizontal di atas untuk penempatan presisi — batas geser dijaga otomatis supaya overlay tidak sampai keluar dari foto.
 - **Radius Sudut (fillet)**: 0–40px, atur ketajaman sudut kotak/peta/badge. 0 = sudut tajam.
 - **Bayangan (shadow)**: 0–100%, efek bayangan di sekeliling overlay yang ikut ter-render ke PNG (berguna saat ditempel ke foto).
 - **Project Name (override semua baris)**: ketik satu nilai untuk dipakai di semua overlay tanpa mengedit CSV. Kosongkan untuk memakai kolom Lokasi dari CSV.

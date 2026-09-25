@@ -11,7 +11,11 @@ const DEFAULT_SETTINGS = {
   customW: 1080,
   customH: 500,
   dateFormat: 'short',
-  overlayPos: 'bottom',
+  overlayPos: 'bottom',    // vertical anchor: 'bottom' | 'top'
+  overlayAlignH: 'left',   // horizontal anchor: 'left' | 'center' | 'right'
+  overlayWidthPct: 100,    // overlay block's max width, as % of canvas width (50-100) — horizontal alignment only becomes visible below 100%
+  offsetX: 0,              // manual horizontal slide, % of canvas width (-25..25), applied on top of the anchor above
+  offsetY: 0,              // manual vertical slide, % of canvas height (-25..25)
   overlayScale: 100,
   bgOpacity: 65,
   fontColor: '#ffffff',
@@ -23,7 +27,7 @@ const DEFAULT_SETTINGS = {
   showMapPin: true,
   cornerRadius: 10,   // corner fillet radius (px @ 1080 base); smaller = sharper
   shadowStrength: 35, // drop-shadow intensity 0..100 (0 = none)
-  badgeStyle: 'logo', // 'logo' | 'text-white' | 'text-dark'
+  badgeStyle: 'logo', // 'logo' | 'text-white' | 'text-dark' | 'none'
   badgeScale: 100,    // badge size percent
   projectNameOverride: '', // if set, overrides the Project Name line for all rows
 
