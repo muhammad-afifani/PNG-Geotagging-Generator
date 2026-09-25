@@ -391,11 +391,16 @@ function measureBadgeWidth(ctx, h, logoImg, appLabel, badgeStyle) {
  * @param {number} opts.width
  * @param {number} opts.height
  * @param {string} opts.dateFormat
- * @param {string} opts.overlayPos - "bottom" | "top"
+ * @param {string} opts.overlayPos - vertical anchor: "bottom" | "top"
+ * @param {string} [opts.overlayAlignH] - horizontal anchor: "left" | "center" | "right" (default "left")
  * @param {number} opts.overlayScale - percent, e.g. 100
+ * @param {number} [opts.overlayWidthPct] - overlay block's max width as % of canvas width, 50..100 (default 100 = full width, matches the original fixed layout; only below 100 does overlayAlignH become visible)
+ * @param {number} [opts.offsetX] - manual horizontal "slide" offset, percent of canvas width, e.g. -25..25 (default 0)
+ * @param {number} [opts.offsetY] - manual vertical "slide" offset, percent of canvas height, e.g. -25..25 (default 0)
  * @param {number} opts.bgOpacity - 0..100
  * @param {string} opts.fontColor - hex
  * @param {number} opts.fontScale - percent
+ * @param {string} [opts.badgeStyle] - "logo" | "text-white" | "text-dark" | "none" (default "logo"; "none" hides the app badge/logo entirely)
  * @param {boolean} opts.showMap
  * @param {boolean} opts.showLocation
  * @param {Object|null} [opts.geo] - resolved reverse-geocode result (Template 2 only)
@@ -409,6 +414,43 @@ function renderOverlay(canvas, row, opts) {
   } else {
     renderOverlayClassic(canvas, row, opts);
   }
+}
+
+/**
+ * Resolve the overlay block's top-left X/Y from the user's position
+ * settings: a horizontal anchor (opts.overlayAlignH: left/center/right)
+ * combined with a vertical anchor (opts.overlayPos: bottom/top), plus
+ * an optional fine manual "slide" offset (opts.offsetX/offsetY, percent
+ * of canvas width/height) layered on top of that anchor. Shared by both
+ * templates so positioning behaves identically everywhere.
+ *
+ * Horizontal alignment only becomes visually apparent once `blockW` is
+ * narrower than the full canvas width (see opts.overlayWidthPct in each
+ * caller) — at the default 100% width, left/center/right all land in
+ * the same place, exactly matching the app's original fixed layout.
+ *
+ * The result is clamped so at least ~70% of the block always stays
+ * within the canvas even at an extreme slide offset — the overlay can
+ * be nudged mostly off-frame on purpose, but never made to disappear
+ * completely by an errant value.
+ */
+function resolveOverlayBlockPosition(W, H, margin, blockW, boxH, badgeH, opts) {
+  const alignH = opts.overlayAlignH || 'left';
+  let blockX = margin;
+  if (alignH === 'center') blockX = (W - blockW) / 2;
+  else if (alignH === 'right') blockX = W - margin - blockW;
+
+  let boxY = opts.overlayPos === 'top' ? margin + badgeH : H - margin - boxH;
+
+  const offsetXPx = ((opts.offsetX || 0) / 100) * W;
+  const offsetYPx = ((opts.offsetY || 0) / 100) * H;
+  blockX += offsetXPx;
+  boxY += offsetYPx;
+
+  blockX = Math.max(-blockW * 0.3, Math.min(W - blockW * 0.7, blockX));
+  boxY = Math.max(-boxH * 0.3, Math.min(H - boxH * 0.7, boxY));
+
+  return { blockX, boxY };
 }
 
 /**
@@ -440,9 +482,12 @@ function renderOverlayClassic(canvas, row, opts) {
   //     box so they visually fuse with zero seam or double-darkening)
   //   * corner radius is user-adjustable (opts.cornerRadius, px @ 1080)
   const margin = 34 * scale;
-  // badge height is user-adjustable via badgeScale (percent). Base 45px @ 1080.
+  // badge height is user-adjustable via badgeScale (percent), or 0 when
+  // badgeStyle is 'none' (logo hidden entirely) so no space is reserved
+  // for it at all. Base 45px @ 1080.
   const badgeScale = (opts.badgeScale != null ? opts.badgeScale : 100) / 100;
-  const badgeH = 45 * scale * badgeScale;
+  const badgeStyle = opts.badgeStyle || 'logo';
+  const badgeH = badgeStyle === 'none' ? 0 : 45 * scale * badgeScale;
   // adjustable fillet radius (default 10px @ 1080 base). Clamped so it
   // can't exceed sane bounds for the box/badge height.
   const radiusBase = (opts.cornerRadius != null ? opts.cornerRadius : 10);
@@ -451,27 +496,30 @@ function renderOverlayClassic(canvas, row, opts) {
   const mapGap = 20 * scale;
   const mapSize = boxH; // separate square map, same height as the text box
 
-  const boxY = opts.overlayPos === 'top'
-    ? margin + badgeH
-    : H - margin - boxH;
+  // overlay block's max width, as a fraction of the canvas width — 100%
+  // (the default) reproduces the original fixed full-width layout
+  // exactly; a narrower value is what makes Posisi Horizontal
+  // (left/center/right) visually apparent. See resolveOverlayBlockPosition().
+  const widthPct = (opts.overlayWidthPct != null ? opts.overlayWidthPct : 100) / 100;
+  const blockW = Math.max((W - margin * 2) * widthPct, mapSize + mapGap + 80 * scale);
+  const { blockX, boxY } = resolveOverlayBlockPosition(W, H, margin, blockW, boxH, badgeH, opts);
 
-  const mapX = margin;
+  const mapX = blockX;
   const mapY = boxY;
-  const textBoxX = opts.showMap ? margin + mapSize + mapGap : margin;
-  const textBoxW = W - margin - textBoxX;
+  const textBoxX = opts.showMap ? blockX + mapSize + mapGap : blockX;
+  const textBoxW = blockX + blockW - textBoxX;
 
   // ---- badge geometry (computed BEFORE the fill so badge + box can
   // be filled together as one path). Badge's RIGHT edge is aligned
   // flush with the text box's right edge (no gap), matching the
   // reference where the logo sits right in the top-right corner.
   const badgeLabel = 'GPS Map Camera';
-  const badgeStyle = opts.badgeStyle || 'logo';
   let badgeW = measureBadgeWidth(ctx, badgeH, opts.logoImg, badgeLabel, badgeStyle);
   badgeW = Math.min(badgeW, textBoxW * 0.65); // extreme logo ratios can't dominate
   let badgeX = textBoxX + textBoxW - badgeW; // flush to box right edge
   badgeX = Math.max(badgeX, textBoxX + 4 * scale);
   const badgeY = boxY - badgeH;
-  const drawBadge = badgeY >= 0;
+  const drawBadge = badgeStyle !== 'none' && badgeY >= 0;
 
   // ---- optional drop-shadow behind the whole overlay ----
   // Technique: (1) fill solid silhouettes WITH an active shadow, so a
@@ -820,7 +868,8 @@ function renderOverlayTemplate2(canvas, row, opts) {
   // box height formula and the map's aspect ratio differ. ----
   const margin = 34 * scale;
   const badgeScale = (opts.badgeScale != null ? opts.badgeScale : 100) / 100;
-  const badgeH = 45 * scale * badgeScale;
+  const badgeStyle = opts.badgeStyle || 'logo';
+  const badgeH = badgeStyle === 'none' ? 0 : 45 * scale * badgeScale;
   const radiusBase = (opts.cornerRadius != null ? opts.cornerRadius : 10);
   const boxRadius = Math.max(0, Math.min(radiusBase * scale, 45 * scale / 2));
   const mapGap = 20 * scale;
@@ -853,26 +902,32 @@ function renderOverlayTemplate2(canvas, row, opts) {
     H - margin * 2 - badgeH
   );
 
+  // overlay block's max width, as a fraction of the canvas width — 100%
+  // (the default) reproduces the original fixed full-width layout
+  // exactly; a narrower value is what makes Posisi Horizontal
+  // (left/center/right) visually apparent. See resolveOverlayBlockPosition().
+  const widthPct = (opts.overlayWidthPct != null ? opts.overlayWidthPct : 100) / 100;
+  const blockW = Math.max((W - margin * 2) * widthPct, boxH + mapGap + 80 * scale);
+
   const mapAspect = parseMapAspect(opts.mapAspect);
   const mapH = boxH;
-  const maxMapW = (W - margin * 2) * 0.55;
+  const maxMapW = blockW * 0.55;
   const mapW = Math.min(mapH * mapAspect, maxMapW);
 
-  const boxY = opts.overlayPos === 'top' ? margin + badgeH : H - margin - boxH;
-  const mapX = margin;
+  const { blockX, boxY } = resolveOverlayBlockPosition(W, H, margin, blockW, boxH, badgeH, opts);
+  const mapX = blockX;
   const mapY = boxY;
-  const textBoxX = opts.showMap ? margin + mapW + mapGap : margin;
-  const textBoxW = W - margin - textBoxX;
+  const textBoxX = opts.showMap ? blockX + mapW + mapGap : blockX;
+  const textBoxW = blockX + blockW - textBoxX;
 
   // ---- badge geometry (flush to the box's top-right corner) ----
   const badgeLabel = 'GPS Map Camera';
-  const badgeStyle = opts.badgeStyle || 'logo';
   let badgeW = measureBadgeWidth(ctx, badgeH, opts.logoImg, badgeLabel, badgeStyle);
   badgeW = Math.min(badgeW, textBoxW * 0.65);
   let badgeX = textBoxX + textBoxW - badgeW;
   badgeX = Math.max(badgeX, textBoxX + 4 * scale);
   const badgeY = boxY - badgeH;
-  const drawBadge = badgeY >= 0;
+  const drawBadge = badgeStyle !== 'none' && badgeY >= 0;
 
   // ---- optional drop shadow (identical technique to Template 1) ----
   const shadowStrength = (opts.shadowStrength != null ? opts.shadowStrength : 0);

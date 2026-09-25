@@ -408,13 +408,24 @@
             </select>
           </div>
 
-          <div class="field">
-            <label for="overlayPos">Posisi Overlay</label>
-            <select id="overlayPos">
-              <option value="bottom" selected>Bawah (default)</option>
-              <option value="top">Atas</option>
-            </select>
+          <div class="field-row" style="grid-column: 1 / -1;">
+            <div class="field">
+              <label for="overlayPos">Posisi Vertikal</label>
+              <select id="overlayPos">
+                <option value="bottom" selected>Bawah (default)</option>
+                <option value="top">Atas</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="overlayAlignH">Posisi Horizontal</label>
+              <select id="overlayAlignH">
+                <option value="left" selected>Kiri (default)</option>
+                <option value="center">Tengah</option>
+                <option value="right">Kanan</option>
+              </select>
+            </div>
           </div>
+          <p class="hint" style="grid-column:1/-1;margin-top:0;">Kombinasikan keduanya untuk posisi apa saja — misal Bawah + Tengah untuk "rata tengah bawah". Posisi Horizontal baru kelihatan bedanya kalau "Lebar Overlay Maksimal" di bawah diperkecil dari 100%.</p>
 
           <div class="settings-subhead">Tampilan Overlay</div>
 
@@ -422,6 +433,23 @@
             <label for="overlayScale">Ukuran Overlay <span id="overlayScaleVal">100%</span></label>
             <input type="range" id="overlayScale" min="70" max="130" value="100">
           </div>
+
+          <div class="field">
+            <label for="overlayWidthPct">Lebar Overlay Maksimal <span id="overlayWidthPctVal">100%</span></label>
+            <input type="range" id="overlayWidthPct" min="50" max="100" value="100">
+          </div>
+
+          <div class="field-row" style="grid-column: 1 / -1;">
+            <div class="field">
+              <label for="offsetX">Geser Horizontal (slide manual) <span id="offsetXVal">0%</span></label>
+              <input type="range" id="offsetX" min="-25" max="25" value="0">
+            </div>
+            <div class="field">
+              <label for="offsetY">Geser Vertikal (slide manual) <span id="offsetYVal">0%</span></label>
+              <input type="range" id="offsetY" min="-25" max="25" value="0">
+            </div>
+          </div>
+          <p class="hint" style="grid-column:1/-1;margin-top:0;">Geser posisi overlay secara manual dari titik Posisi Vertikal/Horizontal di atas — geser ke kanan/kiri atau atas/bawah sedikit demi sedikit sampai pas. Batas geser dijaga otomatis supaya overlay tidak keluar dari foto.</p>
 
           <div class="field">
             <label for="bgOpacity">Opacity Background <span id="bgOpacityVal">65%</span></label>
@@ -459,10 +487,11 @@
               <option value="logo" selected>Gambar Logo (default GPS Map Camera)</option>
               <option value="text-white">Teks Putih</option>
               <option value="text-dark">Teks Gelap</option>
+              <option value="none">Tanpa Logo (sembunyikan)</option>
             </select>
           </div>
 
-          <div class="field">
+          <div class="field" id="badgeScaleField">
             <label for="badgeScale">Ukuran Logo Badge <span id="badgeScaleVal">100%</span></label>
             <input type="range" id="badgeScale" min="60" max="160" value="100">
           </div>

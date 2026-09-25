@@ -77,8 +77,15 @@
     customH: document.getElementById('customH'),
     dateFormat: document.getElementById('dateFormat'),
     overlayPos: document.getElementById('overlayPos'),
+    overlayAlignH: document.getElementById('overlayAlignH'),
     overlayScale: document.getElementById('overlayScale'),
     overlayScaleVal: document.getElementById('overlayScaleVal'),
+    overlayWidthPct: document.getElementById('overlayWidthPct'),
+    overlayWidthPctVal: document.getElementById('overlayWidthPctVal'),
+    offsetX: document.getElementById('offsetX'),
+    offsetXVal: document.getElementById('offsetXVal'),
+    offsetY: document.getElementById('offsetY'),
+    offsetYVal: document.getElementById('offsetYVal'),
     bgOpacity: document.getElementById('bgOpacity'),
     bgOpacityVal: document.getElementById('bgOpacityVal'),
     fontColor: document.getElementById('fontColor'),
@@ -92,6 +99,7 @@
     badgeStyle: document.getElementById('badgeStyle'),
     badgeScale: document.getElementById('badgeScale'),
     badgeScaleVal: document.getElementById('badgeScaleVal'),
+    badgeScaleField: document.getElementById('badgeScaleField'),
     projectNameOverride: document.getElementById('projectNameOverride'),
     showMap: document.getElementById('showMap'),
     showLocation: document.getElementById('showLocation'),
@@ -168,8 +176,15 @@
     el.customSizeRow.classList.toggle('hidden', s.canvasSize !== 'custom');
     el.dateFormat.value = s.dateFormat;
     el.overlayPos.value = s.overlayPos;
+    el.overlayAlignH.value = s.overlayAlignH;
     el.overlayScale.value = s.overlayScale;
     el.overlayScaleVal.textContent = s.overlayScale + '%';
+    el.overlayWidthPct.value = s.overlayWidthPct;
+    el.overlayWidthPctVal.textContent = s.overlayWidthPct + '%';
+    el.offsetX.value = s.offsetX;
+    el.offsetXVal.textContent = s.offsetX + '%';
+    el.offsetY.value = s.offsetY;
+    el.offsetYVal.textContent = s.offsetY + '%';
     el.bgOpacity.value = s.bgOpacity;
     el.bgOpacityVal.textContent = s.bgOpacity + '%';
     el.fontColor.value = s.fontColor;
@@ -183,6 +198,7 @@
     el.badgeStyle.value = s.badgeStyle;
     el.badgeScale.value = s.badgeScale;
     el.badgeScaleVal.textContent = s.badgeScale + '%';
+    el.badgeScaleField.classList.toggle('hidden', s.badgeStyle === 'none');
     el.projectNameOverride.value = s.projectNameOverride || '';
     el.showMap.checked = s.showMap;
     el.showLocation.checked = s.showLocation;
@@ -215,7 +231,11 @@
       customH: parseInt(el.customH.value) || 500,
       dateFormat: el.dateFormat.value,
       overlayPos: el.overlayPos.value,
+      overlayAlignH: el.overlayAlignH.value,
       overlayScale: parseInt(el.overlayScale.value),
+      overlayWidthPct: parseInt(el.overlayWidthPct.value),
+      offsetX: parseInt(el.offsetX.value),
+      offsetY: parseInt(el.offsetY.value),
       bgOpacity: parseInt(el.bgOpacity.value),
       fontColor: el.fontColorHex.value,
       fontScale: parseInt(el.fontScale.value),
@@ -263,7 +283,7 @@
 
   applySettingsToUI(state.settings);
 
-  [el.canvasSize, el.dateFormat, el.overlayPos, el.showMap, el.showLocation, el.mapSource, el.showMapPin].forEach(node => {
+  [el.canvasSize, el.dateFormat, el.overlayPos, el.overlayAlignH, el.showMap, el.showLocation, el.mapSource, el.showMapPin].forEach(node => {
     node.addEventListener('change', () => {
       el.customSizeRow.classList.toggle('hidden', el.canvasSize.value !== 'custom');
       updateMapFieldVisibility();
@@ -292,6 +312,18 @@
     el.overlayScaleVal.textContent = el.overlayScale.value + '%';
     onSettingsChanged();
   });
+  el.overlayWidthPct.addEventListener('input', () => {
+    el.overlayWidthPctVal.textContent = el.overlayWidthPct.value + '%';
+    onSettingsChanged();
+  });
+  el.offsetX.addEventListener('input', () => {
+    el.offsetXVal.textContent = el.offsetX.value + '%';
+    onSettingsChanged();
+  });
+  el.offsetY.addEventListener('input', () => {
+    el.offsetYVal.textContent = el.offsetY.value + '%';
+    onSettingsChanged();
+  });
   el.bgOpacity.addEventListener('input', () => {
     el.bgOpacityVal.textContent = el.bgOpacity.value + '%';
     onSettingsChanged();
@@ -308,7 +340,10 @@
     el.shadowStrengthVal.textContent = el.shadowStrength.value + '%';
     onSettingsChanged();
   });
-  el.badgeStyle.addEventListener('change', onSettingsChanged);
+  el.badgeStyle.addEventListener('change', () => {
+    el.badgeScaleField.classList.toggle('hidden', el.badgeStyle.value === 'none');
+    onSettingsChanged();
+  });
   el.badgeScale.addEventListener('input', () => {
     el.badgeScaleVal.textContent = el.badgeScale.value + '%';
     onSettingsChanged();
@@ -840,7 +875,11 @@
       height: dims.h,
       dateFormat: settings.dateFormat,
       overlayPos: settings.overlayPos,
+      overlayAlignH: settings.overlayAlignH,
       overlayScale: settings.overlayScale,
+      overlayWidthPct: settings.overlayWidthPct,
+      offsetX: settings.offsetX,
+      offsetY: settings.offsetY,
       bgOpacity: settings.bgOpacity,
       fontColor: settings.fontColor,
       fontScale: settings.fontScale,
