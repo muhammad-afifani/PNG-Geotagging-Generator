@@ -1,3 +1,56 @@
+/* Roboto, bundled locally (libs/fonts/roboto, SIL OFL 1.1) — the Android
+   system font the real GPS Map Camera app draws its watermark with. Unique
+   family name so canvas text never picks up a different system Roboto
+   build with different metrics. */
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-ext-700-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'GeoStamp Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('../libs/fonts/roboto/roboto-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 /* =========================================================
    GPS Map Camera Overlay Generator — Stylesheet
    ========================================================= */
@@ -564,8 +617,10 @@ body { min-height: 100vh; }
 }
 
 .preview-canvas-wrap canvas {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 78vh; /* portrait photos in "preview on photo" mode */
   display: block;
 }
 
@@ -1151,3 +1206,25 @@ body { min-height: 100vh; }
   line-height: 1.5;
   word-break: break-word;
 }
+
+/* Peta & Lokasi: map detail controls (size/aspect/label/cone), shown only
+   while the map is enabled — a nested 2-column grid spanning the row */
+.map-detail-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+}
+.map-detail-fields .hint { grid-column: 1 / -1; }
+.exact-preset-field .btn { font-weight: 700; }
+
+/* Tab 1 generate card: hand-off to Tab 2 once photos are linked */
+.linked-photos-box {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+}
+
+.mode-toggle { flex-wrap: wrap; }

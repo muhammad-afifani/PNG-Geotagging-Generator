@@ -4,9 +4,9 @@
 (function () {
   'use strict';
 
-  const state = {
-    photos: [],          // array of File
-  };
+  // photos live in the shared store (js/photostore.js), so a folder
+  // picked in Tab 1 ("Dari Folder Foto") or Tab 4 is already here
+  const photos = () => window.GeoStampPhotos.get();
 
   const el = {
     dropZone: document.getElementById('attachDropZone'),
@@ -48,16 +48,24 @@
     const files = Array.from(fileList).filter(f =>
       /\.(jpe?g|png|hei[cf])$/i.test(f.name) || (f.type || '').startsWith('image/'));
     if (!files.length) return;
-    // natural sort by filename so "order" matching is intuitive
-    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    state.photos = files;
+    window.GeoStampPhotos.set(files); // sorted by name there, so "order" matching is intuitive
+    showFileInfo();
+  }
+
+  function showFileInfo() {
+    const files = photos();
+    if (!files.length) { el.fileInfo.classList.add('hidden'); return; }
     const heicCount = window.GeoStampHeic ? files.filter(f => window.GeoStampHeic.isHeicFile(f)).length : 0;
     el.fileInfo.classList.remove('hidden');
     el.fileInfo.innerHTML = `<strong>${files.length}</strong> foto dimuat.`
       + (heicCount ? `<br><span style="color:var(--text-dim);font-size:11.5px;">${heicCount} foto HEIC terdeteksi — browser ini tidak bisa membaca HEIC secara native, jadi dikonversi otomatis. Ini bisa memakan waktu detik hingga menit per foto untuk resolusi tinggi (Safari lebih cepat karena punya dukungan HEIC bawaan).</span>` : '');
-    refresh();
-    renderPreview();
   }
+
+  window.GeoStampPhotos.onChange(() => {
+    showFileInfo();
+    refresh();
+    if (isActive()) renderPreview(); else previewDirty = true;
+  });
 
   // ---------- options UI ----------
   el.scatter.addEventListener('change', () => {
@@ -85,16 +93,25 @@
   // ---------- stats ----------
   function refresh() {
     const rows = (window.GeoStamp ? window.GeoStamp.getRows() : []) || [];
-    el.statPhotos.textContent = state.photos.length;
+    el.statPhotos.textContent = photos().length;
     el.statRows.textContent = rows.length;
-    el.generateBtn.disabled = !(state.photos.length && rows.length);
+    el.generateBtn.disabled = !(photos().length && rows.length);
     if (!rows.length) {
       el.previewHint.textContent = 'Data belum ada. Buka Tab 1 dan upload CSV atau isi input manual dulu.';
     }
   }
+  // Tab 1 settings changes re-render this preview the next time the tab
+  // is shown (rendering a full-size photo on every slider tick while the
+  // tab isn't even visible would only waste time)
+  let previewDirty = false;
+  const isActive = () => document.getElementById('tab-attach').classList.contains('active');
+  window.addEventListener('geostamp:settingschange', () => { previewDirty = true; });
   window.addEventListener('geostamp:tabchange', (e) => {
-    if (e.detail.tab === 'tab-attach') refresh();
+    if (e.detail.tab !== 'tab-attach') return;
+    refresh();
+    if (previewDirty) { previewDirty = false; renderPreview(); }
   });
+  if (window.GeoStamp && window.GeoStamp.onRowsChanged) window.GeoStamp.onRowsChanged(() => { previewDirty = true; refresh(); });
 
   // ---------- pairing photo <-> CSV row ----------
   function rowForPhoto(photo, index, rows) {
@@ -126,6 +143,7 @@
 
   // ---------- compose overlay onto a photo ----------
   async function composePhoto(photo, row, settings, onStatus) {
+    await window.GeoStamp.fontsReady();
     const { img, url } = await loadImageFromFile(photo, onStatus);
     try {
       const canvas = document.createElement('canvas');
@@ -176,10 +194,10 @@
   async function renderPreview() {
     if (!window.GeoStamp) return;
     const rows = window.GeoStamp.getRows() || [];
-    if (!state.photos.length || !rows.length) return;
+    if (!photos().length || !rows.length) return;
     const myToken = ++previewToken;
     const settings = window.GeoStamp.getSettings();
-    const photo = state.photos[0];
+    const photo = photos()[0];
     const row = rowForPhoto(photo, 0, rows);
     if (!row) return;
     el.previewHint.textContent = `Memuat ${photo.name}…`;
@@ -214,7 +232,7 @@
 
   async function runAttach() {
     const rows = window.GeoStamp.getRows() || [];
-    if (!state.photos.length || !rows.length) return;
+    if (!photos().length || !rows.length) return;
 
     el.generateBtn.disabled = true;
     el.doneMsg.classList.add('hidden');
@@ -224,7 +242,8 @@
     try {
       const settings = window.GeoStamp.getSettings();
       const zip = new JSZip();
-      const total = state.photos.length;
+      const list = photos().slice();
+      const total = list.length;
       const fmt = el.format.value;
       const isJpg = fmt === 'image/jpeg';
       const quality = Number(el.quality.value) / 100;
@@ -233,7 +252,7 @@
       let exifWarn = 0, encoded = 0;
 
       for (let i = 0; i < total; i++) {
-        const photo = state.photos[i];
+        const photo = list[i];
         const row = rowForPhoto(photo, i, rows);
         if (!row) continue;
 

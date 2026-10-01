@@ -52,7 +52,7 @@
       <div class="guide-flow">
         <p class="guide-flow-title">Kegunaan tiap tab (baca ini dulu sebelum mulai):</p>
         <ol class="guide-steps">
-          <li><strong>Tab 1 — Watermark GPS.</strong> Titik mulai semua kerja. Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), atau kalau cuma mau tes beberapa foto pakai mode Input Manual satu-satu. Di sini juga kamu atur tampilan watermark (template, warna, ukuran, logo, dll), cek datanya di tabel Preview Data serta peta &amp; kalender di bawahnya, lalu generate untuk mendapat file PNG watermark transparan (satu per foto, dikumpulkan jadi satu ZIP). <u>Data, logo, dan semua pengaturan yang kamu atur di sini otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
+          <li><strong>Tab 1 — Watermark GPS.</strong> Titik mulai semua kerja. Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), pakai mode Input Manual satu-satu, atau paling praktis: <strong>Dari Folder Foto</strong> — pilih folder foto, datanya dibuat otomatis dan preview watermark langsung tampil di atas foto aslinya. Di sini juga kamu atur tampilan watermark (template, warna, ukuran, logo, dll), cek datanya di tabel Preview Data serta peta &amp; kalender di bawahnya, lalu generate untuk mendapat file PNG watermark transparan (satu per foto, dikumpulkan jadi satu ZIP). <u>Data, logo, dan semua pengaturan yang kamu atur di sini otomatis dipakai juga oleh Tab 2 &amp; Tab 3</u> — tidak perlu upload/isi ulang.</li>
           <li><strong>Tab 2 — Tempel ke Foto.</strong> Dipakai kalau kamu mau watermark langsung "dibakar" menyatu ke foto asli kamu (bukan file PNG terpisah). Upload foto-foto aslinya di sini; datanya (koordinat, tanggal, dst) diambil otomatis dari yang sudah diisi di Tab 1, dipasangkan per foto berdasarkan nama file atau urutan.</li>
           <li><strong>Tab 3 — Geotag Metadata.</strong> Dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF (bukan watermark yang kelihatan di foto) — hasilnya foto tetap terlihat asli/bersih, tapi kalau dicek propertinya sudah ada info lokasi &amp; tanggalnya.</li>
           <li><strong>Tab 4 — Buat CSV dari Foto.</strong> Tool kecil yang berdiri sendiri, terpisah dari Tab 1-3. Berguna kalau foto kamu tanggal/jam pemotretannya sudah hilang atau salah: pilih folder foto, tool ini ekstrak nama file + tanggal/jam (dari EXIF kalau ada, atau dari file) + koordinat GPS &amp; lokasi (kalau ada di EXIF-nya) ke tabel yang bisa dikoreksi manual, lalu diunduh sebagai CSV siap dipakai di Tab 1. Ada tombol Reset untuk mulai ulang dengan file/folder lain.</li>
@@ -112,6 +112,44 @@
             <input type="radio" name="dataInputMode" value="manual">
             <span>Input Manual (satu-satu)</span>
           </label>
+          <label class="radio-pill">
+            <input type="radio" name="dataInputMode" value="folder">
+            <span>Dari Folder Foto (otomatis)</span>
+          </label>
+        </div>
+
+        <div id="folderModePanel" class="hidden">
+          <div class="csv-upload-row">
+            <div class="csv-upload-left">
+              <div id="folderDropZone" class="dropzone">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+                <p><strong>Drag &amp; drop foto</strong> di sini, atau klik untuk memilih foto</p>
+                <input type="file" id="folderPhotoInput" accept="image/*,.heic,.heif" multiple hidden>
+              </div>
+              <label class="btn btn-secondary btn-block btn-file" style="margin-top:10px;">
+                Pilih Folder Foto
+                <input type="file" id="folderDirInput" webkitdirectory multiple hidden>
+              </label>
+              <div id="folderInfo" class="file-info hidden"></div>
+            </div>
+            <div class="csv-upload-right">
+              <p class="hint" style="margin-top:0;">Pilih folder berisi foto — data tiap foto langsung dibuat otomatis tanpa CSV: <strong>nama file</strong>, <strong>tanggal &amp; jam</strong> (dari EXIF, atau tanggal file kalau tidak ada), dan <strong>koordinat GPS</strong> kalau fotonya punya. Lokasi &amp; alamat dideteksi otomatis dari koordinat. Preview di kanan langsung menampilkan watermark <strong>di atas foto aslinya</strong>, jadi ukuran/posisi bisa dipaskan sambil dilihat.</p>
+              <div class="field-row" style="margin-top:10px;">
+                <div class="field">
+                  <label for="folderDefaultLat">Latitude untuk foto tanpa GPS</label>
+                  <input type="text" id="folderDefaultLat" placeholder="-0.855322">
+                </div>
+                <div class="field">
+                  <label for="folderDefaultLng">Longitude untuk foto tanpa GPS</label>
+                  <input type="text" id="folderDefaultLng" placeholder="117.265612">
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-tiny" id="folderApplyCoordsBtn" type="button" style="margin-top:8px;">Terapkan ke foto tanpa GPS</button>
+              <p class="hint">Foto dari kamera di area terbatas biasanya tidak punya GPS — isi koordinat lokasinya di sini sekali untuk semua foto itu (atau geser pin-nya per foto di peta "Peta &amp; Kalender Data").</p>
+            </div>
+          </div>
         </div>
 
         <div id="csvModePanel">
@@ -313,8 +351,13 @@
             <label for="overlayTemplate">Pilih Template Watermark</label>
             <select id="overlayTemplate">
               <option value="classic" selected>Template 1 — Klasik (kartu mengambang)</option>
-              <option value="gpscam2">Template 2 — GPS Map Camera (bar penuh, deteksi lokasi otomatis)</option>
+              <option value="gpscam2">Template 2 — GPS Map Camera (persis seperti aplikasi asli)</option>
             </select>
+          </div>
+
+          <div class="field exact-preset-field" style="grid-column: 1 / -1;">
+            <button class="btn btn-primary btn-block" id="exactPresetBtn" type="button">Samakan Persis dengan Contoh GPS Map Camera</button>
+            <p class="hint" style="margin-top:6px;">Satu klik: Template 2 + semua ukuran, font (Roboto), warna, posisi, peta satelit, pin, kerucut arah, label "Google", bendera, dan format teks diatur sama persis dengan foto asli GPS Map Camera (diukur per piksel). Setelah itu tetap bisa kamu atur ulang sesukanya.</p>
           </div>
 
           <div id="template2Fields" class="template2-fields hidden">
@@ -342,30 +385,38 @@
             </div>
             <div class="field-row">
               <div class="field">
-                <label for="mapAspect">Rasio Peta</label>
-                <select id="mapAspect">
-                  <option value="1:1" selected>1:1 (persegi)</option>
-                  <option value="4:3">4:3 (landscape)</option>
-                  <option value="3:4">3:4 (potret)</option>
-                  <option value="16:9">16:9 (lebar)</option>
-                  <option value="9:16">9:16 (tinggi)</option>
+                <label for="watermarkLang">Bahasa Nama Hari</label>
+                <select id="watermarkLang">
+                  <option value="en" selected>English (Thursday)</option>
+                  <option value="id">Indonesia (Kamis)</option>
                 </select>
               </div>
               <div class="field">
-                <label for="watermarkLang">Bahasa Watermark</label>
-                <select id="watermarkLang">
-                  <option value="en" selected>English (Monday, Lat/Long)</option>
-                  <option value="id">Indonesia (Senin, LU/LS/BT/BB)</option>
+                <label for="latLngFormat">Format Koordinat</label>
+                <select id="latLngFormat">
+                  <option value="deg" selected>Lat -0.855322° Long 117.265612°</option>
+                  <option value="plain">Lat -0.855322 Long 117.265612</option>
+                  <option value="dir">0.855322 LS 117.265612 BT</option>
                 </select>
               </div>
             </div>
-            <div class="field-check">
-              <label class="checkbox-row">
-                <input type="checkbox" id="showTime">
-                <span>Tampilkan jam di baris tanggal</span>
-              </label>
+            <div class="field-row">
+              <div class="field">
+                <label for="timeFormat">Format Jam</label>
+                <select id="timeFormat">
+                  <option value="12h0" selected>03:24 PM</option>
+                  <option value="12h">3:24 PM</option>
+                  <option value="24h">15:24</option>
+                </select>
+              </div>
+              <div class="field field-check" style="justify-content:flex-end;">
+                <label class="checkbox-row">
+                  <input type="checkbox" id="showTime">
+                  <span>Tampilkan jam di baris tanggal</span>
+                </label>
+              </div>
             </div>
-            <p class="hint" style="margin-top:0;">Judul (kota, provinsi, negara + bendera) memakai hasil deteksi otomatis dari koordinat kalau diaktifkan di bagian "Deteksi Otomatis dari Koordinat" di bawah. Toggle "Tampilkan thumbnail peta" di bawah tetap berlaku untuk template ini juga — rasio di atas hanya mengatur bentuknya (persegi/lebar/tinggi), bukan tampil-tidaknya.</p>
+            <p class="hint" style="margin-top:0;">Judul (kota, provinsi, negara + bendera) memakai hasil deteksi otomatis dari koordinat kalau diaktifkan di bagian "Deteksi Otomatis dari Koordinat" di bawah. Ukuran, rasio, label &amp; arah peta diatur di bagian "Peta &amp; Lokasi".</p>
 
             <div class="field-row">
               <div class="field">
@@ -525,14 +576,46 @@
 
           <div class="field" id="mapZoomField">
             <label for="mapZoom">Zoom Peta <span id="mapZoomVal">16</span></label>
-            <input type="range" id="mapZoom" min="10" max="18" value="16">
+            <input type="range" id="mapZoom" min="10" max="19" value="16">
           </div>
 
-          <div class="field field-check" id="mapPinField">
-            <label class="checkbox-row">
-              <input type="checkbox" id="showMapPin" checked>
-              <span>Tampilkan pin lokasi di atas peta</span>
-            </label>
+          <div class="map-detail-fields" id="mapDetailFields">
+            <div class="field">
+              <label for="mapScale">Ukuran Peta <span id="mapScaleVal">100%</span></label>
+              <input type="range" id="mapScale" min="50" max="200" value="100">
+            </div>
+            <div class="field">
+              <label for="mapAspect">Rasio Peta</label>
+              <select id="mapAspect">
+                <option value="1:1" selected>1:1 (persegi, seperti aplikasi)</option>
+                <option value="4:3">4:3 (landscape)</option>
+                <option value="3:4">3:4 (potret)</option>
+                <option value="16:9">16:9 (lebar)</option>
+                <option value="9:16">9:16 (tinggi)</option>
+              </select>
+            </div>
+
+            <div class="field field-check" id="mapPinField">
+              <label class="checkbox-row">
+                <input type="checkbox" id="showMapPin" checked>
+                <span>Tampilkan pin lokasi di atas peta</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="mapLabelShow">
+                <span>Tampilkan label di pojok peta</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="showMapCone">
+                <span>Tampilkan arah kamera (kerucut biru)</span>
+              </label>
+            </div>
+            <div class="field">
+              <label for="mapLabelText">Teks label peta</label>
+              <input type="text" id="mapLabelText" maxlength="20" placeholder="Google">
+              <label for="mapConeBearing" style="margin-top:8px;">Arah kamera <span id="mapConeBearingVal">106°</span></label>
+              <input type="range" id="mapConeBearing" min="0" max="359" value="106">
+            </div>
+            <p class="hint" style="margin-top:0;">Ukuran Peta = tinggi peta dibanding tinggi kotak teks (100% = sama tinggi, seperti aplikasi). Arah kamera dipakai untuk semua foto, kecuali baris yang punya kolom <code>arah</code> sendiri (mis. "165" atau "165° S"). Gambar peta tetap dari Esri; label hanya teks hiasan dan bisa kamu ganti.</p>
           </div>
 
           <div class="field field-check hidden" id="mapNoticeField">
@@ -599,6 +682,10 @@
           <h2>Preview</h2>
           <span class="preview-tag" id="previewRowTag">Baris contoh #1</span>
         </div>
+        <label class="checkbox-row hidden" id="previewOnPhotoRow" style="margin-bottom:10px;">
+          <input type="checkbox" id="previewOnPhoto" checked>
+          <span>Preview di atas foto asli (<span id="previewPhotoName"></span>)</span>
+        </label>
         <div class="preview-canvas-wrap">
           <canvas id="previewCanvas"></canvas>
           <div id="previewEmpty" class="preview-empty">
@@ -633,6 +720,10 @@
         </div>
         <div id="doneMsg" class="done-msg hidden">
           Selesai! ZIP berisi <strong id="doneCount">0</strong> file PNG telah diunduh.
+        </div>
+        <div id="linkedPhotosBox" class="linked-photos-box hidden">
+          <p class="hint" style="margin-top:0;"><strong id="linkedPhotosCount">0</strong> foto sudah terhubung. Kalau ukuran &amp; posisinya sudah pas di preview, tempel watermark langsung ke semua foto:</p>
+          <button class="btn btn-primary btn-block" id="goAttachBtn" type="button">Lanjut: Tempel ke Foto &amp; Download →</button>
         </div>
       </section>
 
@@ -912,7 +1003,9 @@
           <div id="cbEmpty" class="preview-empty" style="position:static; padding:30px 10px;">
             <p>Pilih foto atau folder di sebelah kiri untuk mulai ekstraksi.</p>
           </div>
-          <button class="btn btn-primary btn-block" id="cbDownloadBtn" type="button" disabled style="margin-top:14px;">Download CSV</button>
+          <button class="btn btn-primary btn-block" id="cbUseBtn" type="button" disabled style="margin-top:14px;">Lanjut: Atur Watermark &amp; Preview di Foto →</button>
+          <button class="btn btn-secondary btn-block" id="cbDownloadBtn" type="button" disabled style="margin-top:8px;">Download CSV</button>
+          <p class="hint">"Lanjut" langsung memindahkan data tabel ini <strong>beserta fotonya</strong> ke Tab 1 — tanpa download/upload CSV. Di sana preview watermark tampil di atas foto aslinya, lalu tinggal tempel ke semua foto di Tab 2. Tip: hal yang sama bisa langsung dari Tab 1 → Data Foto → "Dari Folder Foto".</p>
           <p class="hint">CSV yang dihasilkan punya kolom yang sama dengan contoh CSV Tab 1 (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat). Kalau foto JPG-nya punya GPS di EXIF (misal dari GPS Map Camera), Latitude/Longitude otomatis terisi dan Lokasi otomatis dideteksi dari koordinatnya — kalau tidak ada, kolom itu dikosongkan untuk kamu isi manual lewat Excel/Google Sheets. Semua kolom tetap bisa dikoreksi langsung di tabel sebelum download.</p>
         </section>
       </div>
@@ -958,6 +1051,8 @@
 <script src="js/settings.js"></script>
 <script src="js/exifgeo.js"></script>
 <script src="js/heicsupport.js"></script>
+<script src="js/photometa.js"></script>
+<script src="js/photostore.js"></script>
 <script src="js/main.js"></script>
 <script src="js/mapview.js"></script>
 <script src="js/tabs.js"></script>

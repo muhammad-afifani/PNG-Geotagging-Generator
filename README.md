@@ -25,6 +25,7 @@ Aplikasi web 100% client-side (tanpa backend, tanpa server, tanpa Node/PHP/Pytho
 1. **Isi data foto** — dua cara, bisa dipakai gantian atau digabung:
    - **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Data Foto, isi datamu mengikuti format itu, lalu upload.
    - **Input Manual (satu-satu)** — pilih mode ini kalau cuma mau tes cepat 1–5 foto tanpa bikin file CSV dulu. Isi form (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat, plus field opsional untuk Template 2), klik **"+ Tambah Baris"**, ulangi untuk foto berikutnya. Baris manual ikut ditambahkan ke baris yang sudah ada dari CSV (kalau ada) — dua-duanya bisa digabung.
+   - **Dari Folder Foto (otomatis)** — pilih folder (atau beberapa foto) langsung, tanpa CSV. Tiap foto otomatis jadi satu baris: nama file, tanggal & jam (dari EXIF; kalau tidak ada, dari tanggal file), koordinat GPS (kalau fotonya punya). Untuk foto tanpa GPS (umum untuk kamera di area terbatas), isi Latitude/Longitude sekali lalu klik **"Terapkan ke foto tanpa GPS"**, atau geser pin per foto di peta. Lokasi & alamat dideteksi otomatis dari koordinat. Foto-fotonya langsung terhubung ke Tab 2, dan **preview di kanan menampilkan watermark di atas foto aslinya** — jadi ukuran, posisi, font, dll bisa dipaskan sambil dilihat hasil akhirnya. Setelah pas, klik **"Lanjut: Tempel ke Foto & Download"** di kartu Generate.
    - Setelah data masuk (dari cara manapun), cek tabel **Preview Data** yang muncul di bawahnya — semua baris ditampilkan lengkap dengan tombol hapus per baris, dan klik satu baris untuk langsung melihat preview overlay-nya di panel kanan. Ini supaya kamu bisa pastikan data yang dimasukkan sudah benar sebelum generate massal.
 2. **(Opsional) Upload logo** — Mode A pakai logo bawaan (embedded), Mode B upload PNG sendiri.
 3. **Atur pengaturan overlay** — resolusi, format tanggal, posisi, opacity, warna & ukuran font, sumber peta, dll.
@@ -95,7 +96,7 @@ css/
   style.css
 js/
   dms.js        -> konversi Decimal Degrees <-> DMS (N/S/E/W)
-  maptile.js    -> fetch tile peta asli (OSM/Esri) + cache + pin marker
+  maptile.js    -> fetch tile peta asli (Esri) + cache, fallback ke zoom lebih rendah kalau tile tidak ada
   countries.js  -> tabel kode negara -> nama Indonesia + kode bendera (Template 2)
   geocode.js    -> reverse-geocoding (Esri) + fetch bendera negara (Template 2)
   openmeteo.js  -> ketinggian & cuaca historis (Open-Meteo, gratis tanpa API key)
@@ -105,7 +106,9 @@ js/
   main.js       -> controller UI, preview, batching & ZIP generation
   mapview.js    -> peta interaktif (Leaflet) + kalender tanggal import di Tab 1
   csvbuilder.js -> Tab 4, tool ekstraksi nama file/tanggal/GPS dari foto (berdiri sendiri)
-  heicsupport.js -> konversi foto HEIC/HEIF (iPhone) -> JPEG, dipakai Tab 2 & Tab 3
+  heicsupport.js -> konversi foto HEIC/HEIF (iPhone) -> JPEG, dipakai Tab 1 (preview di foto), Tab 2 & Tab 3
+  photometa.js  -> baca tanggal/jam + GPS + arah kamera dari EXIF foto (Tab 1 "Dari Folder Foto" & Tab 4)
+  photostore.js -> daftar foto bersama: folder yang dipilih di Tab 1/2/4 langsung terpakai di semua tab
 libs/
   papaparse.min.js
   jszip.min.js
@@ -113,8 +116,10 @@ libs/
   piexif.min.js
   leaflet/leaflet.js, leaflet.css, images/  -> peta interaktif di Tab 1 (MIT license)
   libheif/libheif-bundle.js -> decoder HEIC/HEIF resmi libheif berbasis WASM (LGPL-3.0, lihat "Dukungan Format HEIC/HEIF")
+  fonts/roboto/ -> font Roboto (SIL OFL 1.1) untuk Template 2 — font yang sama dengan aplikasi GPS Map Camera (Android)
 assets/
   logo-default.png     -> logo bawaan (Mode A)
+  badge-icon.png       -> ikon aplikasi untuk badge Template 2 (ikon + teks "GPS Map Camera")
   placeholder-map.png  -> aset cadangan (peta placeholder utamanya digambar via Canvas)
 README.md
 ```
@@ -128,22 +133,25 @@ Tab 1 punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay
 ### Template 1 — Klasik
 Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`). Sama seperti Template 2, judul kota juga menampilkan bendera negara kalau "Deteksi Otomatis dari Koordinat" aktif.
 
-### Template 2 — GPS Map Camera
-Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari tampilan watermark asli aplikasi GPS Map Camera. Sama seperti Template 1: kartu mengambang dengan sudut membulat dan badge logo menempel di pojok kanan-atas kotak teks (keluar/nongol di ujung, persis mekanisme Template 1) — bedanya ada baris data yang lebih lengkap:
-- Judul tebal `Kota, Provinsi, Negara` + bendera negara
-- Alamat lengkap (wrap hingga 2 baris)
-- Baris koordinat desimal: `Lat 40.689298   Long -74.044495`
-- Baris tanggal + jam (opsional) + zona waktu: `Thursday, 20/03/2025 GMT+08:00`
-- **Note** (opsional): `Note : <teks bebas>`
-- **Kontak** (opsional): nomor telepon/kontak dengan ikon telepon
-- **Info geografis** (opsional): suhu, kecepatan angin, ketinggian, dan arah/bearing — masing-masing dengan **ikon berwarna** sendiri (matahari kuning, angin biru, gunung merah, kompas ungu), tampil berjejer hanya untuk field yang ada datanya
+### Template 2 — GPS Map Camera (persis aplikasi asli)
+Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari watermark aplikasi GPS Map Camera, **dikalibrasi per piksel terhadap foto asli dari aplikasinya**: semua ukuran (margin, tinggi badge, ukuran peta, padding, sudut, ukuran font, jarak baris) diukur dari foto asli 1500×2000 lalu diskalakan mengikuti lebar foto — jadi di foto ukuran berapa pun posisinya sama seperti buatan aplikasi. Hasil verifikasi terhadap foto contoh: semua baris teks jatuh di posisi yang sama (selisih ≤1 px), dan pemotongan baris alamat terjadi di kata yang sama persis.
+- Font **Roboto** (dibundel lokal, sama dengan font Android yang dipakai aplikasinya) — dengan angka proporsional dan spasi antar-kata yang disesuaikan seperti render Android.
+- Judul `Kota, Provinsi, Negara` (tidak tebal, hingga 3 baris) + **bendera berkibar** di ujung judul seperti emoji bendera di aplikasi. Bendera Indonesia digambar sendiri, jadi selalu muncul walau internet/geocoding mati, asal koordinat/teks lokasinya di Indonesia.
+- Alamat lengkap (hingga 4 baris) — dipotong per baris dengan cara yang sama seperti Android (baris dibuat serata mungkin, bukan sekadar "isi penuh lalu pindah baris").
+- Koordinat: `Lat -0.855322° Long 117.265612°`
+- Tanggal: `Kamis, 24/09/2026 03:24 PM GMT +08:00`
+- Badge: ikon aplikasi + teks "GPS Map Camera", menempel di pojok kanan-atas kotak teks. Kotak hitam transparan ±63%.
+- Peta: kotak di kiri setinggi kotak teks, pin merah gaya Google Maps, opsional **kerucut arah kamera biru** dan **label teks di pojok peta** (default "Google").
+- **Note**, **Kontak**, dan **Info geografis** (suhu/angin/ketinggian/arah, ikon berwarna) tetap tersedia sebagai baris opsional — hanya muncul kalau ada isinya.
+
+Tombol **"Samakan Persis dengan Contoh GPS Map Camera"** (paling atas di Pengaturan Overlay) mengatur semuanya sekali klik ke nilai yang diukur dari foto asli; setelah itu semua tetap bisa diubah.
 
 Pengaturan khusus Template 2 (muncul otomatis saat template ini dipilih):
 - **Zona Waktu (GMT Offset)** — dropdown WIB/WITA/WIT plus offset umum lainnya, ditulis di baris tanggal.
-- **Rasio Peta** — 1:1 / 4:3 / 3:4 / 16:9 / 9:16. Thumbnail peta di-crop (bukan di-stretch) dari grid tile yang sama, jadi bentuknya berubah sesuai rasio tanpa gambar jadi gepeng/molor.
-- **Bahasa Watermark** — English (default) atau Indonesia. Mode Indonesia menerjemahkan nama hari (Monday → Senin) dan notasi lintang/bujur pada baris koordinat desimal (`LU`/`LS` untuk lintang, `BT`/`BB` untuk bujur, menggantikan `N`/`S`/`E`/`W`).
-- **Tampilkan jam di baris tanggal** — opsional, default mati.
-- **Ukuran Font** kini murni mengubah ukuran teks — tidak lagi ikut memperbesar/memperkecil ukuran kartu (sebelumnya kartu ikut membesar mengikuti setelan font, sudah diperbaiki).
+- **Bahasa Nama Hari** — English (Thursday) atau Indonesia (Kamis).
+- **Format Koordinat** — `Lat -0.855322° Long 117.265612°` (seperti aplikasi, default), tanpa simbol derajat, atau `0.855322 LS 117.265612 BT`.
+- **Format Jam** — `03:24 PM` (seperti aplikasi, default), `3:24 PM`, atau `15:24`; plus toggle **Tampilkan jam di baris tanggal** (default aktif).
+- **Ukuran Font** mengubah ukuran teks; tinggi kotak teks (dan peta) ikut menyesuaikan isi, seperti di aplikasi.
 - **Deteksi otomatis lokasi & alamat dari koordinat (reverse geocoding)** — aktif secara default. Saat aktif, judul (kota/provinsi/negara + bendera) dan baris alamat **otomatis dihitung dari Latitude/Longitude tiap baris**, tidak perlu mengisi kolom Lokasi/Alamat di CSV secara manual. Prosesnya:
   - Menggunakan layanan reverse-geocoding gratis & tanpa API key dari Esri (`geocode.arcgis.com`) — vendor yang sama dengan yang sudah dipakai untuk tile peta, dipilih dengan alasan yang sama: layanan geocoding OpenStreetMap (Nominatim) secara eksplisit melarang pemakaian otomatis/massal tanpa izin, sedangkan endpoint anonim Esri tidak membawa pembatasan itu untuk pemakaian ringan seperti ini.
   - Bendera negara diambil dari `flagcdn.com` (gratis, tanpa API key).
@@ -196,6 +204,9 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 
 ## Batasan yang Diketahui
 
+- Gambar peta (jalan/satelit) selalu dari Esri, bukan Google — label "Google" di pojok peta hanya teks hiasan agar tampilannya sama dengan aplikasi, dan bisa diganti/dimatikan. Alamat hasil deteksi otomatis juga dari Esri, jadi susunan katanya bisa sedikit beda dari alamat versi Google di aplikasi asli; kalau mau persis, isi kolom Alamat sendiri.
+- Kalau di zoom tinggi Esri tidak punya gambar untuk area itu (sering di daerah terpencil), peta otomatis memakai gambar dari zoom di bawahnya yang diperbesar — jadi peta tidak lagi kosong/blank, tapi bisa terlihat sedikit buram di zoom paling tinggi.
+
 - Mode peta Jalan/Satelit butuh koneksi internet aktif selama proses generate; jika jaringan diblokir firewall, gunakan mode Offline atau pastikan domain tile server diizinkan (lihat bagian "Peta Otomatis").
 - Untuk CSV sangat besar (ribuan baris) dengan mode peta online aktif, proses generate akan memakan waktu lebih lama karena menunggu respons server tile satu per satu; tidak ada batas jumlah baris, hanya soal waktu tunggu.
 - Deteksi kolom CSV mengandalkan nama header yang mirip; jika header sangat tidak lazim, kolom bisa tidak terbaca — cek panel "kolom terdeteksi" di bawah upload CSV untuk verifikasi sebelum generate.
@@ -215,6 +226,8 @@ File `contoh-format.csv` disertakan sebagai template. Buka dengan Excel/Google S
 
 ## Pengaturan Baru
 
+- **Samakan Persis dengan Contoh GPS Map Camera**: satu klik mengatur Template 2 + semua ukuran/warna/posisi/peta/format ke nilai yang diukur dari foto asli aplikasi.
+- **Peta** (berlaku untuk Template 1 & 2): **Ukuran Peta** 50–200% (dibanding tinggi kotak teks), **Rasio Peta** 1:1 / 4:3 / 3:4 / 16:9 / 9:16, **label teks di pojok peta** (default "Google", bisa diganti), dan **arah kamera** (kerucut biru dari pin; arah per foto diambil dari EXIF arah kamera kalau ada, atau dari kolom CSV `arah`, selain itu dari slider). **Zoom Peta** 10–19.
 - **Gaya Logo "GPS Map Camera"**: pilih Teks Putih (default, jelas di background gelap), Teks Gelap, Gambar Logo dari file yang diupload, atau **Tanpa Logo** untuk menyembunyikan badge-nya sepenuhnya (tidak ada ruang kosong yang tersisa saat disembunyikan).
 - **Ukuran Logo Badge**: 60–160% untuk memperbesar/memperkecil badge (disembunyikan otomatis kalau Gaya Logo diset ke Tanpa Logo, karena tidak relevan).
 - **Posisi & Ukuran Overlay**: kombinasi 3 kontrol untuk menempatkan overlay di mana saja pada foto:

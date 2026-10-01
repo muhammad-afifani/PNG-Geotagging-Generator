@@ -16,6 +16,12 @@
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => activateTab(btn.dataset.tab));
   });
+  window.GeoStampTabs = {
+    activate: (tabId) => {
+      activateTab(tabId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // --- coffee / QRIS modal ---
   const coffeeBtn = document.getElementById('coffeeBtn');
