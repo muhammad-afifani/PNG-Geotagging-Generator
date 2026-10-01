@@ -116,10 +116,12 @@ libs/
   piexif.min.js
   leaflet/leaflet.js, leaflet.css, images/  -> peta interaktif di Tab 1 (MIT license)
   libheif/libheif-bundle.js -> decoder HEIC/HEIF resmi libheif berbasis WASM (LGPL-3.0, lihat "Dukungan Format HEIC/HEIF")
-  fonts/roboto/ -> font Roboto (SIL OFL 1.1) untuk Template 2 — font yang sama dengan aplikasi GPS Map Camera (Android)
+  fonts/inter/  -> font Inter (SIL OFL 1.1) — default Template 2, paling mirip SF Pro (font iPhone)
+  fonts/roboto/ -> font Roboto (SIL OFL 1.1) — opsi font Android untuk Template 2
 assets/
   logo-default.png     -> logo bawaan (Mode A)
   badge-icon.png       -> ikon aplikasi untuk badge Template 2 (ikon + teks "GPS Map Camera")
+  map-label-google.png -> logo "Google" (transparan) untuk pojok peta
   placeholder-map.png  -> aset cadangan (peta placeholder utamanya digambar via Canvas)
 README.md
 ```
@@ -135,13 +137,13 @@ Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah 
 
 ### Template 2 — GPS Map Camera (persis aplikasi asli)
 Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari watermark aplikasi GPS Map Camera, **dikalibrasi per piksel terhadap foto asli dari aplikasinya**: semua ukuran (margin, tinggi badge, ukuran peta, padding, sudut, ukuran font, jarak baris) diukur dari foto asli 1500×2000 lalu diskalakan mengikuti lebar foto — jadi di foto ukuran berapa pun posisinya sama seperti buatan aplikasi. Hasil verifikasi terhadap foto contoh: semua baris teks jatuh di posisi yang sama (selisih ≤1 px), dan pemotongan baris alamat terjadi di kata yang sama persis.
-- Font **Roboto** (dibundel lokal, sama dengan font Android yang dipakai aplikasinya) — dengan angka proporsional dan spasi antar-kata yang disesuaikan seperti render Android.
-- Judul `Kota, Provinsi, Negara` (tidak tebal, hingga 3 baris) + **bendera berkibar** di ujung judul seperti emoji bendera di aplikasi. Bendera Indonesia digambar sendiri, jadi selalu muncul walau internet/geocoding mati, asal koordinat/teks lokasinya di Indonesia.
+- **Font Watermark** (pilihan): **Inter** (default) — font gratis yang paling mirip SF Pro, font iPhone yang dipakai aplikasinya; cocok dengan foto asli tanpa koreksi spasi apa pun. **Font sistem perangkat** — SF Pro asli kalau tool dibuka di iPhone/iPad/Mac. **Roboto** — font Android. Inter & Roboto dibundel lokal (`libs/fonts/`).
+- Judul `Kota, Provinsi, Negara` (tidak tebal, hingga 3 baris) + **bendera berkibar** di ujung judul, bentuknya seperti emoji bendera iPhone. Bendera Indonesia digambar sendiri, jadi selalu muncul walau internet/geocoding mati, asal koordinat/teks lokasinya di Indonesia.
 - Alamat lengkap (hingga 4 baris) — dipotong per baris dengan cara yang sama seperti Android (baris dibuat serata mungkin, bukan sekadar "isi penuh lalu pindah baris").
 - Koordinat: `Lat -0.855322° Long 117.265612°`
 - Tanggal: `Kamis, 24/09/2026 03:24 PM GMT +08:00`
 - Badge: ikon aplikasi + teks "GPS Map Camera", menempel di pojok kanan-atas kotak teks. Kotak hitam transparan ±63%.
-- Peta: kotak di kiri setinggi kotak teks, pin merah gaya Google Maps, opsional **kerucut arah kamera biru** dan **label teks di pojok peta** (default "Google").
+- Peta: kotak di kiri setinggi kotak teks, pin merah gaya Google Maps, opsional **kerucut arah kamera biru** (memudar di ujung luarnya) dan **logo "Google"** di pojok peta (gambar logo asli, background-nya transparan; kalau teks label diganti selain "Google", digambar sebagai teks).
 - **Note**, **Kontak**, dan **Info geografis** (suhu/angin/ketinggian/arah, ikon berwarna) tetap tersedia sebagai baris opsional — hanya muncul kalau ada isinya.
 
 Tombol **"Samakan Persis dengan Contoh GPS Map Camera"** (paling atas di Pengaturan Overlay) mengatur semuanya sekali klik ke nilai yang diukur dari foto asli; setelah itu semua tetap bisa diubah.
