@@ -30,20 +30,44 @@ const MAP_PROVIDERS = {
     label: 'Jalan (Esri World Street Map)',
     urlTemplate: (x, y, z) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`,
     attribution: 'Esri, HERE, Garmin, USGS, OpenStreetMap contributors',
-    maxZoom: 19
+    maxZoom: 20
   },
   satellite: {
     label: 'Satelit (Esri World Imagery)',
     urlTemplate: (x, y, z) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
     attribution: 'Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19
+    maxZoom: 20
   }
 };
 
-// in-memory cache: "provider|z|x|y" -> HTMLImageElement (or a rejected marker)
+// in-memory cache: "provider|z|x|y" -> decoded tile image, or MISSING_TILE
+// for a tile the server definitively doesn't have (404, or Esri's gray
+// "Map data not yet available" placeholder). Transient failures
+// (timeouts, network errors) are deliberately NOT cached, so a flaky
+// moment never leaves a permanently blank map for the rest of the session.
 const _tileCache = new Map();
-// in-memory cache for assembled thumbnails: "provider|lat|lng|zoom|size" -> dataURL
+const MISSING_TILE = { missing: true };
+// in-memory cache for assembled thumbnails (only fully-successful ones)
 const _thumbCache = new Map();
+
+// Max parallel tile requests. Without this, dragging the zoom slider
+// fires dozens of requests at once; the browser queues them and the
+// ones that matter (the final zoom) time out behind the rest.
+const MAX_CONCURRENT_TILE_FETCHES = 6;
+let _activeTileFetches = 0;
+const _tileFetchQueue = [];
+function acquireTileSlot() {
+  if (_activeTileFetches < MAX_CONCURRENT_TILE_FETCHES) {
+    _activeTileFetches++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => _tileFetchQueue.push(resolve));
+}
+function releaseTileSlot() {
+  const next = _tileFetchQueue.shift();
+  if (next) next();
+  else _activeTileFetches--;
+}
 
 function lonToTileX(lon, zoom) {
   return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -61,10 +85,51 @@ function tileYToLat(y, zoom) {
 }
 
 /**
- * Fetch a single tile as an Image, using fetch()+blob so the
- * resulting <img> can be safely drawn to canvas without tainting it.
- * Returns null on any failure (timeout, network error, 404, etc)
- * rather than throwing — callers should treat null as "draw fallback".
+ * Esri answers requests beyond its imagery coverage (common at zoom
+ * 17+ in rural Indonesia) with HTTP 200 and a flat light-gray "Map data
+ * not yet available" tile. Detect that by sampling: almost every pixel
+ * neutral gray in a narrow light band. Real imagery (even cloud or
+ * open water) is never that uniformly neutral.
+ */
+function isNoDataTile(img) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 16; c.height = 16;
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0, 16, 16);
+    const d = cx.getImageData(0, 0, 16, 16).data;
+    let gray = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      if (Math.abs(r - g) <= 6 && Math.abs(g - b) <= 6 && r >= 175 && r <= 235) gray++;
+    }
+    return gray / 256 >= 0.9;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function decodeTileBlob(blob) {
+  // createImageBitmap on a same-origin Blob never taints the canvas,
+  // which is critical for PNG export; objectURL+Image as a fallback.
+  if (typeof createImageBitmap === 'function') {
+    try { return await createImageBitmap(blob); } catch (e) { /* fall through */ }
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  const img = await new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = objectUrl;
+  });
+  URL.revokeObjectURL(objectUrl);
+  return img;
+}
+
+/**
+ * Fetch a single tile via fetch()+blob (so drawing it never taints the
+ * canvas). Resolves to an image, MISSING_TILE (server has no tile
+ * there), or null (transient failure). Never throws.
  */
 async function fetchTileImage(provider, x, y, z, timeoutMs) {
   const key = `${provider}|${z}|${x}|${y}`;
@@ -73,161 +138,144 @@ async function fetchTileImage(provider, x, y, z, timeoutMs) {
   const cfg = MAP_PROVIDERS[provider];
   const url = cfg.urlTemplate(x, y, z);
 
+  await acquireTileSlot();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
-
   try {
     const res = await fetch(url, { signal: controller.signal, mode: 'cors' });
-    clearTimeout(timer);
-    if (!res.ok) {
-      _tileCache.set(key, null);
-      return null;
+    if (res.status === 404) {
+      _tileCache.set(key, MISSING_TILE);
+      return MISSING_TILE;
     }
+    if (!res.ok) return null;
     const blob = await res.blob();
-
-    // Prefer createImageBitmap: decoding a same-origin Blob this way
-    // yields a bitmap that NEVER taints the canvas, which is critical
-    // for PNG export to work. Fall back to objectURL+Image if the
-    // browser lacks createImageBitmap.
-    let img = null;
-    if (typeof createImageBitmap === 'function') {
-      try {
-        img = await createImageBitmap(blob);
-      } catch (e) {
-        img = null;
-      }
+    const img = await decodeTileBlob(blob);
+    if (!img) return null;
+    if (isNoDataTile(img)) {
+      _tileCache.set(key, MISSING_TILE);
+      return MISSING_TILE;
     }
-    if (!img) {
-      const objectUrl = URL.createObjectURL(blob);
-      img = await new Promise((resolve) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = () => resolve(null);
-        image.src = objectUrl;
-      });
-      URL.revokeObjectURL(objectUrl);
-    }
-
     _tileCache.set(key, img);
     return img;
   } catch (err) {
-    clearTimeout(timer);
-    _tileCache.set(key, null);
     return null;
+  } finally {
+    clearTimeout(timer);
+    releaseTileSlot();
   }
 }
 
 /**
- * Build a map thumbnail (as a canvas) centered on lat/lng by fetching
- * the 3x3 grid of surrounding tiles at the given zoom and cropping/
- * compositing them to `width`x`height` pixels (defaults to a square
- * of `size`x`size` for backward compatibility — Template 1 always
- * uses a square; Template 2 can request any reasonable aspect ratio,
- * cropped from the same 3x3 grid rather than stretched, so there's
- * no distortion).
+ * Get the imagery for tile (x,y,z) as { img, sx, sy, sw, sh } (a source
+ * rectangle to draw into the 256px slot), falling back to an ancestor
+ * tile at a lower zoom — cropped to the matching quadrant and scaled up
+ * — when the server has no tile at z. This is what keeps a map visible
+ * at high zoom in areas where Esri's imagery stops at a lower level,
+ * instead of going blank. Returns null if nothing could be loaded.
+ */
+async function fetchTileWithFallback(provider, x, y, z, timeoutMs, maxLevelsUp) {
+  for (let up = 0; up <= maxLevelsUp && z - up >= 0; up++) {
+    const pz = z - up;
+    const px = x >> up;
+    const py = y >> up;
+    const img = await fetchTileImage(provider, px, py, pz, timeoutMs);
+    if (img && img !== MISSING_TILE) {
+      const span = MAP_TILE_SIZE >> up;
+      const mask = (1 << up) - 1;
+      return { img, sx: (x & mask) * span, sy: (y & mask) * span, sw: span, sh: span, levelsUp: up };
+    }
+    // a transient failure at this level: still try a parent rather than
+    // leaving a hole, but don't treat it as "missing" for the cache
+  }
+  return null;
+}
+
+/**
+ * Build a map thumbnail (as a canvas) centered exactly on lat/lng,
+ * `width`x`height` pixels, cropped from the surrounding tile grid (never
+ * stretched). Tiles missing at the requested zoom fall back to scaled
+ * ancestor tiles (see fetchTileWithFallback).
  *
- * Returns { canvas, ok } where ok=false means one or more tiles
- * failed to load (canvas will still contain whatever loaded,
- * composited over a neutral background) — caller can decide whether
- * to fall back to the fully-synthetic placeholder instead.
+ * Returns { canvas, ok } — canvas is null only when NOTHING could be
+ * loaded at all (caller then uses the offline placeholder rather than a
+ * blank box). Only fully-successful thumbnails are cached, so a
+ * transient failure is retried next time instead of sticking.
  */
 async function buildMapThumbnail(lat, lng, opts) {
   const provider = opts.provider || 'street';
   const zoom = opts.zoom || 16;
   const size = opts.size || 256;
-  const outW = opts.width || size;
-  const outH = opts.height || size;
+  const outW = Math.max(1, Math.round(opts.width || size));
+  const outH = Math.max(1, Math.round(opts.height || size));
   const timeoutMs = opts.timeoutMs || 8000;
 
-  const cacheKey = `${provider}|${lat.toFixed(5)}|${lng.toFixed(5)}|${zoom}|${outW}x${outH}`;
-  if (_thumbCache.has(cacheKey)) {
-    return _thumbCache.get(cacheKey);
-  }
-
   const cfg = MAP_PROVIDERS[provider];
-  const z = Math.min(zoom, cfg.maxZoom);
+  const z = Math.max(1, Math.min(zoom, cfg.maxZoom));
+
+  const cacheKey = `${provider}|${lat.toFixed(5)}|${lng.toFixed(5)}|${z}|${outW}x${outH}`;
+  if (_thumbCache.has(cacheKey)) return _thumbCache.get(cacheKey);
 
   const centerTileX = lonToTileX(lng, z);
   const centerTileY = latToTileY(lat, z);
+  // enough tiles around the center to cover the requested crop wherever
+  // the coordinate falls inside its tile
+  const rx = Math.max(1, Math.ceil(outW / 2 / MAP_TILE_SIZE));
+  const ry = Math.max(1, Math.ceil(outH / 2 / MAP_TILE_SIZE));
 
-  // fetch a 3x3 tile grid around the center so we can crop a
-  // precisely-centered square regardless of pixel offset within tiles
   const grid = [];
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
+  for (let dy = -ry; dy <= ry; dy++) {
+    for (let dx = -rx; dx <= rx; dx++) {
       grid.push({ dx, dy, x: centerTileX + dx, y: centerTileY + dy });
     }
   }
 
   const results = await Promise.all(
-    grid.map(g => fetchTileImage(provider, g.x, g.y, z, timeoutMs))
+    grid.map(g => fetchTileWithFallback(provider, g.x, g.y, z, timeoutMs, 4))
   );
 
   let successCount = 0;
+  let exactCount = 0;
   const gridCanvas = document.createElement('canvas');
-  gridCanvas.width = MAP_TILE_SIZE * 3;
-  gridCanvas.height = MAP_TILE_SIZE * 3;
+  gridCanvas.width = MAP_TILE_SIZE * (rx * 2 + 1);
+  gridCanvas.height = MAP_TILE_SIZE * (ry * 2 + 1);
   const gctx = gridCanvas.getContext('2d');
   gctx.fillStyle = '#3a4238';
   gctx.fillRect(0, 0, gridCanvas.width, gridCanvas.height);
+  gctx.imageSmoothingQuality = 'high';
 
   grid.forEach((g, i) => {
-    const img = results[i];
-    if (img) {
-      successCount++;
-      gctx.drawImage(img, (g.dx + 1) * MAP_TILE_SIZE, (g.dy + 1) * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE);
-    }
+    const t = results[i];
+    if (!t) return;
+    successCount++;
+    if (t.levelsUp === 0) exactCount++;
+    gctx.drawImage(t.img, t.sx, t.sy, t.sw, t.sh,
+      (g.dx + rx) * MAP_TILE_SIZE, (g.dy + ry) * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE);
   });
 
-  // compute the pixel position of lat/lng within the center tile,
-  // so we can crop a square exactly centered on the real coordinate
+  if (successCount === 0) {
+    return { canvas: null, ok: false, successCount: 0, total: grid.length };
+  }
+
+  // pixel position of lat/lng inside the grid, to crop exactly centered
   const worldX = (lng + 180) / 360 * Math.pow(2, z) * MAP_TILE_SIZE;
   const latRad = lat * Math.PI / 180;
   const worldY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, z) * MAP_TILE_SIZE;
-
-  const gridOriginWorldX = (centerTileX - 1) * MAP_TILE_SIZE;
-  const gridOriginWorldY = (centerTileY - 1) * MAP_TILE_SIZE;
-
-  const pxInGrid = worldX - gridOriginWorldX;
-  const pyInGrid = worldY - gridOriginWorldY;
+  const pxInGrid = worldX - (centerTileX - rx) * MAP_TILE_SIZE;
+  const pyInGrid = worldY - (centerTileY - ry) * MAP_TILE_SIZE;
 
   const outCanvas = document.createElement('canvas');
   outCanvas.width = outW;
   outCanvas.height = outH;
-  const octx = outCanvas.getContext('2d');
-  octx.drawImage(
+  outCanvas.getContext('2d').drawImage(
     gridCanvas,
     pxInGrid - outW / 2, pyInGrid - outH / 2, outW, outH,
     0, 0, outW, outH
   );
 
-  const result = { canvas: outCanvas, ok: successCount === grid.length, successCount, total: grid.length };
-  _thumbCache.set(cacheKey, result);
+  const ok = successCount === grid.length;
+  const result = { canvas: outCanvas, ok, successCount, exactCount, total: grid.length };
+  if (ok) _thumbCache.set(cacheKey, result);
   return result;
-}
-
-/**
- * Convenience: draw a red map pin marker centered on a canvas/context
- * (used after compositing the map thumbnail, since the tile grid
- * itself has no marker).
- */
-function drawMapPinMarker(ctx, cx, cy, r) {
-  ctx.save();
-  ctx.fillStyle = '#e5464f';
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx - r * 0.7, cy + r * 0.5);
-  ctx.lineTo(cx + r * 0.7, cy + r * 0.5);
-  ctx.lineTo(cx, cy + r * 2.1);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.38, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
 }
 
 function clearMapTileCache() {

@@ -44,12 +44,18 @@
     // generated watermark's map thumbnail (js/maptile.js) — kept
     // consistent rather than pointing at OpenStreetMap's own tile
     // servers, whose usage policy prohibits this kind of automated use.
+    // maxNativeZoom: beyond these levels Esri often has no tiles for
+    // rural areas (404 or a gray "Map data not yet available" image),
+    // which made the map go blank when zooming in. Leaflet now upscales
+    // the last available level instead of requesting missing tiles.
     const street = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
+      maxZoom: 20,
+      maxNativeZoom: 18,
       attribution: 'Esri, HERE, Garmin, USGS, OpenStreetMap contributors'
     }).addTo(map);
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
+      maxZoom: 20,
+      maxNativeZoom: 17,
       attribution: 'Esri, Maxar, Earthstar Geographics'
     });
     L.control.layers({ 'Jalan': street, 'Satelit': satellite }, null, { position: 'topright' }).addTo(map);

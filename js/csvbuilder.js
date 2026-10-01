@@ -17,6 +17,9 @@
    which is this whole app's premise) simply leave those columns
    blank for manual entry, exactly as before.
 
+   Extraction itself lives in photometa.js (shared with Tab 1's "Dari
+   Folder Foto"), and "Lanjut" hands rows + photos straight to Tab 1.
+
    Built for cameras/photos that lost their capture date/location, so
    every auto-filled value is clearly editable and never treated as
    ground truth the user can't double-check.
@@ -36,8 +39,10 @@
     tableBody: document.getElementById('cbTableBody'),
     empty: document.getElementById('cbEmpty'),
     downloadBtn: document.getElementById('cbDownloadBtn'),
-    resetBtn: document.getElementById('cbResetBtn')
+    resetBtn: document.getElementById('cbResetBtn'),
+    useBtn: document.getElementById('cbUseBtn')
   };
+  let files = []; // the photos behind state.rows, same order
 
   el.dropZone.addEventListener('click', () => el.fileInput.click());
   el.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); el.dropZone.classList.add('dragover'); });
@@ -52,34 +57,27 @@
   el.resetBtn.addEventListener('click', resetAll);
 
   async function handleFiles(fileList) {
-    const files = Array.from(fileList).filter(f => (f.type || '').startsWith('image/') || /\.(jpe?g|png|hei[cf])$/i.test(f.name));
-    if (!files.length) { alert('Tidak ada file gambar yang terdeteksi.'); return; }
-    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    const picked = Array.from(fileList).filter(f => window.GeoStampPhotoMeta.isPhotoFile(f));
+    if (!picked.length) { alert('Tidak ada file gambar yang terdeteksi.'); return; }
+    picked.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    files = picked;
 
     el.fileInfo.classList.remove('hidden');
     el.fileInfo.innerHTML = `<span>Memproses <strong>${files.length}</strong> foto…</span>`;
     el.downloadBtn.disabled = true;
+    el.useBtn.disabled = true;
     el.resetBtn.disabled = true;
 
     const rows = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const nameNoExt = file.name.replace(/\.[^.]+$/, '');
-      const exifData = await extractExifData(file);
-
-      let date, time, dateSource;
-      if (exifData.date) {
-        date = exifData.date; time = exifData.time; dateSource = 'exif';
-      } else {
-        const dt = fileTimestampToDateTime(file);
-        date = dt.date; time = dt.time; dateSource = 'file';
-      }
-
+      const meta = await window.GeoStampPhotoMeta.extract(file);
       rows.push({
-        file: nameNoExt, date, time, dateSource,
-        lat: exifData.lat, lng: exifData.lng,
+        file: nameNoExt, date: meta.date, time: meta.time, dateSource: meta.dateSource,
+        lat: meta.lat, lng: meta.lng, direction: meta.direction || '',
         location: '', address: '',
-        gpsSource: (exifData.lat != null && exifData.lng != null) ? 'exif' : null
+        gpsSource: meta.lat != null ? 'exif' : null
       });
       if (i % 8 === 0) await new Promise(r => setTimeout(r, 0)); // keep UI responsive
     }
@@ -120,70 +118,12 @@
     el.fileInfo.innerHTML = `<span><strong>${state.rows.length}</strong> foto diproses.</span>`;
   }
 
-  /**
-   * Reads DateTimeOriginal (falls back to 0th.DateTime) and GPS lat/lng
-   * from a JPEG's EXIF via piexif, in a single pass. Returns
-   * { date, time, lat, lng } with any/all fields null — never throws
-   * (non-JPEGs, missing EXIF, or corrupt data all just mean "nothing
-   * available", handled by each caller's own fallback).
-   */
-  async function extractExifData(file) {
-    const isJpeg = /\.jpe?g$/i.test(file.name || '') || (file.type || '').toLowerCase().includes('jpeg');
-    if (!isJpeg) return { date: null, time: null, lat: null, lng: null };
-    try {
-      const binary = await readFileAsBinaryString(file);
-      const dataURL = 'data:image/jpeg;base64,' + btoa(binary);
-      const exifObj = piexif.load(dataURL);
-
-      let date = null, time = null;
-      const rawDate = (exifObj.Exif && exifObj.Exif[piexif.ExifIFD.DateTimeOriginal])
-        || (exifObj['0th'] && exifObj['0th'][piexif.ImageIFD.DateTime]);
-      if (rawDate) {
-        const m = String(rawDate).match(/^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2})/);
-        if (m) { date = `${m[1]}-${m[2]}-${m[3]}`; time = `${m[4]}:${m[5]}`; }
-      }
-
-      let lat = null, lng = null;
-      const gps = exifObj.GPS;
-      if (gps && gps[piexif.GPSIFD.GPSLatitude] && gps[piexif.GPSIFD.GPSLongitude]) {
-        try {
-          const latRef = gps[piexif.GPSIFD.GPSLatitudeRef] || 'N';
-          const lngRef = gps[piexif.GPSIFD.GPSLongitudeRef] || 'E';
-          const latVal = piexif.GPSHelper.dmsRationalToDeg(gps[piexif.GPSIFD.GPSLatitude], latRef);
-          const lngVal = piexif.GPSHelper.dmsRationalToDeg(gps[piexif.GPSIFD.GPSLongitude], lngRef);
-          if (!isNaN(latVal) && !isNaN(lngVal)) { lat = latVal; lng = lngVal; }
-        } catch (e) { /* leave lat/lng null */ }
-      }
-
-      return { date, time, lat, lng };
-    } catch (e) {
-      return { date: null, time: null, lat: null, lng: null };
-    }
-  }
-
-  function fileTimestampToDateTime(file) {
-    const d = new Date(file.lastModified);
-    const p = (n) => String(n).padStart(2, '0');
-    return {
-      date: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`,
-      time: `${p(d.getHours())}:${p(d.getMinutes())}`
-    };
-  }
-
-  function readFileAsBinaryString(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('Gagal membaca file.'));
-      reader.readAsBinaryString(file);
-    });
-  }
-
   function renderTable() {
     const total = state.rows.length;
     el.empty.classList.toggle('hidden', total > 0);
     el.tableWrap.classList.toggle('hidden', total === 0);
     el.downloadBtn.disabled = total === 0;
+    el.useBtn.disabled = total === 0;
     if (!total) { el.tableBody.innerHTML = ''; el.count.textContent = ''; return; }
 
     const exifCount = state.rows.filter(r => r.dateSource === 'exif').length;
@@ -272,7 +212,20 @@
 
   /** Clears all extracted results and both file inputs so the user can
    * upload a different file/folder without reloading the page. */
+  // hand the extracted rows + their photos straight to Tab 1 (no CSV
+  // download/upload round trip): watermark settings with live preview
+  // on the real photos, then Tab 2 burns it onto all of them
+  el.useBtn.addEventListener('click', () => {
+    if (!state.rows.length || !window.GeoStamp) return;
+    window.GeoStamp.importPhotoRows(state.rows.map(r => ({
+      file: r.file, lat: r.lat, lng: r.lng, date: r.date, time: r.time,
+      location: r.location, address: r.address, bearing: r.direction
+    })), files);
+    if (window.GeoStampTabs) window.GeoStampTabs.activate('tab-overlay');
+  });
+
   function resetAll() {
+    files = [];
     state.rows = [];
     el.fileInput.value = '';
     el.folderInput.value = '';

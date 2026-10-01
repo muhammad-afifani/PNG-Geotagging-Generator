@@ -25,6 +25,12 @@ const DEFAULT_SETTINGS = {
   mapSource: 'street',
   mapZoom: 16,
   showMapPin: true,
+  mapScale: 100,          // map height as % of the text box height (50-200)
+  mapAspect: '1:1',       // map width:height (both templates)
+  mapLabelShow: false,    // text label in the map's bottom-left corner
+  mapLabelText: 'Google', // that label's text
+  showMapCone: false,     // blue camera-direction cone from the pin
+  mapConeBearing: 106,    // cone direction (compass degrees) when the row has no "Arah" value
   cornerRadius: 10,   // corner fillet radius (px @ 1080 base); smaller = sharper
   shadowStrength: 35, // drop-shadow intensity 0..100 (0 = none)
   badgeStyle: 'logo', // 'logo' | 'text-white' | 'text-dark' | 'none'
@@ -33,9 +39,10 @@ const DEFAULT_SETTINGS = {
 
   template: 'classic',  // 'classic' (Template 1) | 'gpscam2' (Template 2)
   gmtOffset: '+08:00',  // GMT offset shown on Template 2's date line
-  showTime: false,       // Template 2 only: include time-of-day on the date line
-  watermarkLang: 'en',   // Template 2 only: 'en' (Monday, Lat/Long) | 'id' (Senin, LU/LS/BT/BB)
-  mapAspect: '1:1',      // Template 2 only: map thumbnail aspect ratio (width:height)
+  showTime: true,        // Template 2 only: include time-of-day on the date line
+  timeFormat: '12h0',    // Template 2 only: '12h0' "03:24 PM" (like the app) | '12h' "3:24 PM" | '24h' "15:24"
+  latLngFormat: 'deg',   // Template 2 only: 'deg' "Lat -0.855322° Long 117.265612°" (like the app) | 'plain' | 'dir' (LS/BT)
+  watermarkLang: 'en',   // Template 2 only: day-name language — 'en' (Thursday) | 'id' (Kamis)
   noteOverride: '',      // Template 2 only: "Note : ..." line for all rows (overrides CSV "note" column)
   contactOverride: '',   // Template 2 only: contact/phone line for all rows (overrides CSV "phone" column)
 
@@ -46,6 +53,46 @@ const DEFAULT_SETTINGS = {
   autoWeather: false,    // fill missing "Suhu"/"Angin" via Open-Meteo weather
 
   // which parts of the location title are drawn (Template 1 & 2 alike)
+  showGeoCity: true,
+  showGeoProvince: true,
+  showGeoCountry: true,
+  showGeoFlag: true
+};
+
+// "Samakan Persis dengan Contoh GPS Map Camera" — every look-related
+// setting at the value measured from a genuine GPS Map Camera photo.
+// Applied on top of the current settings, so data-related choices
+// (resolution, GMT zone, date format for Template 1, overrides) stay.
+const EXACT_GPSCAM_PRESET = {
+  template: 'gpscam2',
+  overlayScale: 100,
+  fontScale: 100,
+  fontColor: '#ffffff',
+  bgOpacity: 63,
+  cornerRadius: 10,
+  shadowStrength: 0,
+  badgeStyle: 'logo',
+  badgeScale: 100,
+  overlayPos: 'bottom',
+  overlayAlignH: 'left',
+  overlayWidthPct: 100,
+  offsetX: 0,
+  offsetY: 0,
+  showMap: true,
+  mapSource: 'satellite',
+  mapZoom: 17,
+  showMapPin: true,
+  mapScale: 100,
+  mapAspect: '1:1',
+  mapLabelShow: true,
+  mapLabelText: 'Google',
+  showMapCone: true,
+  mapConeBearing: 106,
+  watermarkLang: 'id',
+  showTime: true,
+  timeFormat: '12h0',
+  latLngFormat: 'deg',
+  autoGeocode: true,
   showGeoCity: true,
   showGeoProvince: true,
   showGeoCountry: true,

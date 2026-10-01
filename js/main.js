@@ -14,14 +14,42 @@
     logoImg: null,       // HTMLImageElement or null (null = self-drawn default)
     mapImg: null,        // reserved (unused directly; map thumbnails are built per-row now)
     sampleIndex: 0,
-    settings: loadSettings()
+    settings: loadSettings(),
+    badgeIconImg: null   // app icon for Template 2's badge (icon + "GPS Map Camera" text, like the app)
   };
+
+  // Template 2 draws with the bundled Roboto; canvas text silently falls
+  // back to another font if it isn't loaded yet, so every render waits
+  // for it first (instant after the first time).
+  const fontsReady = (document.fonts && document.fonts.load)
+    ? Promise.all([400, 500].map(w => document.fonts.load(`${w} 32px "GeoStamp Roboto"`, 'Aa0\u00B0'))).then(() => {}, () => {})
+    : Promise.resolve();
+
+  (function loadBadgeIcon() {
+    const img = new Image();
+    img.onload = () => { state.badgeIconImg = img; renderPreview(); };
+    img.src = 'assets/badge-icon.png';
+  })();
 
   // ---------- element refs ----------
   const el = {
     dataInputModeRadios: document.querySelectorAll('input[name="dataInputMode"]'),
     csvModePanel: document.getElementById('csvModePanel'),
     manualModePanel: document.getElementById('manualModePanel'),
+    folderModePanel: document.getElementById('folderModePanel'),
+    folderDropZone: document.getElementById('folderDropZone'),
+    folderPhotoInput: document.getElementById('folderPhotoInput'),
+    folderDirInput: document.getElementById('folderDirInput'),
+    folderInfo: document.getElementById('folderInfo'),
+    folderDefaultLat: document.getElementById('folderDefaultLat'),
+    folderDefaultLng: document.getElementById('folderDefaultLng'),
+    folderApplyCoordsBtn: document.getElementById('folderApplyCoordsBtn'),
+    previewOnPhotoRow: document.getElementById('previewOnPhotoRow'),
+    previewOnPhoto: document.getElementById('previewOnPhoto'),
+    previewPhotoName: document.getElementById('previewPhotoName'),
+    linkedPhotosBox: document.getElementById('linkedPhotosBox'),
+    linkedPhotosCount: document.getElementById('linkedPhotosCount'),
+    goAttachBtn: document.getElementById('goAttachBtn'),
     dropZone: document.getElementById('dropZone'),
     csvInput: document.getElementById('csvInput'),
     csvInfo: document.getElementById('csvInfo'),
@@ -68,6 +96,9 @@
     showGeoFlag: document.getElementById('showGeoFlag'),
     mapAspect: document.getElementById('mapAspect'),
     watermarkLang: document.getElementById('watermarkLang'),
+    latLngFormat: document.getElementById('latLngFormat'),
+    timeFormat: document.getElementById('timeFormat'),
+    exactPresetBtn: document.getElementById('exactPresetBtn'),
     noteOverride: document.getElementById('noteOverride'),
     contactOverride: document.getElementById('contactOverride'),
 
@@ -112,6 +143,14 @@
     mapZoomField: document.getElementById('mapZoomField'),
     showMapPin: document.getElementById('showMapPin'),
     mapPinField: document.getElementById('mapPinField'),
+    mapDetailFields: document.getElementById('mapDetailFields'),
+    mapScale: document.getElementById('mapScale'),
+    mapScaleVal: document.getElementById('mapScaleVal'),
+    mapLabelShow: document.getElementById('mapLabelShow'),
+    mapLabelText: document.getElementById('mapLabelText'),
+    showMapCone: document.getElementById('showMapCone'),
+    mapConeBearing: document.getElementById('mapConeBearing'),
+    mapConeBearingVal: document.getElementById('mapConeBearingVal'),
     mapNoticeField: document.getElementById('mapNoticeField'),
     mapNoticeText: document.getElementById('mapNoticeText'),
     mapAttribution: document.getElementById('mapAttribution'),
@@ -166,6 +205,8 @@
     el.showGeoFlag.checked = s.showGeoFlag;
     el.mapAspect.value = s.mapAspect;
     el.watermarkLang.value = s.watermarkLang;
+    el.latLngFormat.value = s.latLngFormat;
+    el.timeFormat.value = s.timeFormat;
     el.noteOverride.value = s.noteOverride || '';
     el.contactOverride.value = s.contactOverride || '';
     updateTemplateFieldVisibility();
@@ -206,6 +247,13 @@
     el.mapZoom.value = s.mapZoom;
     el.mapZoomVal.textContent = s.mapZoom;
     el.showMapPin.checked = s.showMapPin;
+    el.mapScale.value = s.mapScale;
+    el.mapScaleVal.textContent = s.mapScale + '%';
+    el.mapLabelShow.checked = s.mapLabelShow;
+    el.mapLabelText.value = s.mapLabelText || '';
+    el.showMapCone.checked = s.showMapCone;
+    el.mapConeBearing.value = s.mapConeBearing;
+    el.mapConeBearingVal.textContent = s.mapConeBearing + '\u00B0';
     updateMapFieldVisibility();
   }
 
@@ -223,6 +271,8 @@
       showGeoFlag: el.showGeoFlag.checked,
       mapAspect: el.mapAspect.value,
       watermarkLang: el.watermarkLang.value,
+      latLngFormat: el.latLngFormat.value,
+      timeFormat: el.timeFormat.value,
       noteOverride: el.noteOverride.value,
       contactOverride: el.contactOverride.value,
 
@@ -248,7 +298,12 @@
       showLocation: el.showLocation.checked,
       mapSource: el.mapSource.value,
       mapZoom: parseInt(el.mapZoom.value),
-      showMapPin: el.showMapPin.checked
+      showMapPin: el.showMapPin.checked,
+      mapScale: parseInt(el.mapScale.value),
+      mapLabelShow: el.mapLabelShow.checked,
+      mapLabelText: el.mapLabelText.value,
+      showMapCone: el.showMapCone.checked,
+      mapConeBearing: parseInt(el.mapConeBearing.value)
     };
   }
 
@@ -261,7 +316,7 @@
     const isOffline = el.mapSource.value === 'offline';
     el.mapSourceField.classList.toggle('hidden', !mapOn);
     el.mapZoomField.classList.toggle('hidden', !mapOn || isOffline);
-    el.mapPinField.classList.toggle('hidden', !mapOn);
+    el.mapDetailFields.classList.toggle('hidden', !mapOn);
     el.mapNoticeField.classList.toggle('hidden', !mapOn || isOffline);
     el.mapAttribution.classList.toggle('hidden', !mapOn || isOffline);
     if (mapOn && !isOffline) {
@@ -279,6 +334,7 @@
     state.settings = readSettingsFromUI();
     saveSettings(state.settings);
     renderPreview();
+    window.dispatchEvent(new CustomEvent('geostamp:settingschange'));
   }
 
   applySettingsToUI(state.settings);
@@ -291,7 +347,8 @@
     });
   });
 
-  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect, el.watermarkLang].forEach(node => {
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect, el.watermarkLang, el.latLngFormat, el.timeFormat,
+    el.mapLabelShow, el.showMapCone].forEach(node => {
     node.addEventListener('change', () => {
       updateTemplateFieldVisibility();
       onSettingsChanged();
@@ -305,6 +362,28 @@
 
   el.mapZoom.addEventListener('input', () => {
     el.mapZoomVal.textContent = el.mapZoom.value;
+    onSettingsChanged();
+  });
+  el.mapScale.addEventListener('input', () => {
+    el.mapScaleVal.textContent = el.mapScale.value + '%';
+    onSettingsChanged();
+  });
+  el.mapConeBearing.addEventListener('input', () => {
+    el.mapConeBearingVal.textContent = el.mapConeBearing.value + '\u00B0';
+    onSettingsChanged();
+  });
+  el.mapLabelText.addEventListener('input', onSettingsChanged);
+
+  el.exactPresetBtn.addEventListener('click', () => {
+    state.settings = { ...state.settings, ...EXACT_GPSCAM_PRESET };
+    saveSettings(state.settings);
+    applySettingsToUI(state.settings);
+    if (logoSource !== 'default') {
+      // the app's own badge is the default icon + name
+      document.querySelector('input[name="logoMode"][value="default"]').checked = true;
+      el.logoUploadZone.classList.add('hidden');
+      loadDefaultLogo();
+    }
     onSettingsChanged();
   });
 
@@ -396,8 +475,122 @@
       const mode = document.querySelector('input[name="dataInputMode"]:checked').value;
       el.csvModePanel.classList.toggle('hidden', mode !== 'csv');
       el.manualModePanel.classList.toggle('hidden', mode !== 'manual');
+      el.folderModePanel.classList.toggle('hidden', mode !== 'folder');
     });
   });
+
+  function setDataInputMode(mode) {
+    const radio = document.querySelector(`input[name="dataInputMode"][value="${mode}"]`);
+    if (radio && !radio.checked) {
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // ---------- "Dari Folder Foto": rows straight from the photos' EXIF ----------
+  function makeRow(idx, fields) {
+    const location = fields.location || '';
+    return {
+      _index: idx,
+      file: fields.file,
+      lat: fields.lat == null || fields.lat === '' ? NaN : Number(fields.lat),
+      lng: fields.lng == null || fields.lng === '' ? NaN : Number(fields.lng),
+      date: fields.date || '',
+      time: fields.time || '',
+      location,
+      address: fields.address || '',
+      city: location,
+      note: '', phone: '', temperature: '', wind: '', altitude: '',
+      direction: '',
+      // camera heading from the photo's EXIF: steers the map's direction
+      // cone only (the visible "Arah" text stays a manual/CSV field)
+      bearing: fields.bearing || ''
+    };
+  }
+
+  function defaultFolderCoords() {
+    const lat = parseFloat(String(el.folderDefaultLat.value).replace(',', '.'));
+    const lng = parseFloat(String(el.folderDefaultLng.value).replace(',', '.'));
+    return (isNaN(lat) || isNaN(lng)) ? null : { lat, lng };
+  }
+
+  async function importPhotoFolder(fileList) {
+    const files = Array.from(fileList).filter(f => window.GeoStampPhotoMeta.isPhotoFile(f));
+    if (!files.length) { alert('Tidak ada file foto yang terdeteksi.'); return; }
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    el.folderInfo.classList.remove('hidden');
+    const def = defaultFolderCoords();
+    const rows = [];
+    let gpsCount = 0, defCount = 0, exifDateCount = 0;
+    for (let i = 0; i < files.length; i++) {
+      if (i % 5 === 0) {
+        el.folderInfo.innerHTML = `<span>Membaca data foto ${i + 1} / ${files.length}…</span>`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+      const meta = await window.GeoStampPhotoMeta.extract(files[i]);
+      let lat = meta.lat, lng = meta.lng;
+      if (lat != null) gpsCount++;
+      else if (def) { lat = def.lat; lng = def.lng; defCount++; }
+      if (meta.dateSource === 'exif') exifDateCount++;
+      rows.push(makeRow(i, {
+        file: files[i].name.replace(/\.[^.]+$/, ''),
+        lat, lng, date: meta.date, time: meta.time, bearing: meta.direction
+      }));
+    }
+    state.rows = rows;
+    state.headers = [];
+    state.colMap = {};
+    window.GeoStampPhotos.set(files);
+    const noCoord = rows.filter(r => isNaN(r.lat)).length;
+    el.folderInfo.innerHTML = `<span><strong>${files.length}</strong> foto — ${gpsCount} dengan GPS dari foto`
+      + (defCount ? `, ${defCount} memakai koordinat yang kamu isi` : '')
+      + (noCoord ? `, <strong>${noCoord} belum punya koordinat</strong> (isi koordinat di samping lalu klik "Terapkan", atau geser pin di peta)` : '')
+      + `. Tanggal/jam: ${exifDateCount} dari EXIF, ${files.length - exifDateCount} dari tanggal file.</span>`;
+    refreshAfterRowsChanged('first');
+  }
+
+  el.folderDropZone.addEventListener('click', () => el.folderPhotoInput.click());
+  el.folderDropZone.addEventListener('dragover', (e) => { e.preventDefault(); el.folderDropZone.classList.add('dragover'); });
+  el.folderDropZone.addEventListener('dragleave', () => el.folderDropZone.classList.remove('dragover'));
+  el.folderDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    el.folderDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) importPhotoFolder(e.dataTransfer.files);
+  });
+  [el.folderPhotoInput, el.folderDirInput].forEach(input => input.addEventListener('change', (e) => {
+    if (e.target.files.length) importPhotoFolder(e.target.files);
+    e.target.value = '';
+  }));
+  el.folderApplyCoordsBtn.addEventListener('click', () => {
+    const def = defaultFolderCoords();
+    if (!def) { alert('Isi Latitude dan Longitude dengan angka yang valid dulu.'); return; }
+    let n = 0;
+    state.rows.forEach(r => { if (isNaN(r.lat) || isNaN(r.lng)) { r.lat = def.lat; r.lng = def.lng; n++; } });
+    if (!n) { alert('Semua baris sudah punya koordinat.'); return; }
+    refreshAfterRowsChanged('clamp');
+  });
+
+  /** Used by Tab 4: load its (edited) rows + their photos into Tab 1. */
+  function importPhotoRows(rows, files) {
+    state.rows = rows.map((r, i) => makeRow(i, r));
+    state.headers = [];
+    state.colMap = {};
+    window.GeoStampPhotos.set(files);
+    setDataInputMode('folder');
+    el.folderInfo.classList.remove('hidden');
+    el.folderInfo.innerHTML = `<span><strong>${rows.length}</strong> foto dimuat dari Tab 4 (Buat CSV dari Foto).</span>`;
+    refreshAfterRowsChanged('first');
+  }
+
+  function updateLinkedPhotosUI() {
+    const n = window.GeoStampPhotos.count();
+    el.previewOnPhotoRow.classList.toggle('hidden', !n);
+    el.linkedPhotosBox.classList.toggle('hidden', !(n && state.rows.length));
+    el.linkedPhotosCount.textContent = n;
+  }
+  window.GeoStampPhotos.onChange(() => { updateLinkedPhotosUI(); renderPreview(); });
+  el.previewOnPhoto.addEventListener('change', renderPreview);
+  el.goAttachBtn.addEventListener('click', () => { if (window.GeoStampTabs) window.GeoStampTabs.activate('tab-attach'); });
 
   /**
    * Shared refresh after state.rows changes for ANY reason (CSV load,
@@ -428,6 +621,7 @@
     renderDataPreviewTable();
     renderPreview();
     notifyRowsChanged();
+    updateLinkedPhotosUI();
   }
 
   // ---------- rows-changed pub/sub (used by mapview.js to keep the
@@ -720,18 +914,19 @@
     if (settings.mapSource === 'offline') return null;
     if (isNaN(row.lat) || isNaN(row.lng)) return null;
 
-    // Template 2's map can be a non-square aspect ratio; request the
-    // thumbnail pre-cropped to that ratio (max dimension 256) so it
-    // never needs to be stretched when drawn.
-    const base = 256;
-    const ratio = settings.template === 'gpscam2' ? parseMapAspect(settings.mapAspect) : 1;
+    // Request the thumbnail pre-cropped to the map's aspect ratio (so it
+    // is never stretched), at zoom+1 with a 512px long side: the same
+    // ground area as a 256px map at the chosen zoom, but with twice the
+    // detail, so it stays sharp when burned onto full-resolution photos.
+    const base = 512;
+    const ratio = parseMapAspect(settings.mapAspect);
     const w = ratio >= 1 ? base : Math.round(base * ratio);
     const h = ratio >= 1 ? Math.round(base / ratio) : base;
 
     try {
       const result = await buildMapThumbnail(row.lat, row.lng, {
         provider: settings.mapSource,
-        zoom: settings.mapZoom,
+        zoom: settings.mapZoom + 1,
         width: w,
         height: h,
         timeoutMs: MAP_FETCH_TIMEOUT_MS
@@ -817,6 +1012,15 @@
 
   // ---------- preview ----------
   let previewRequestId = 0;
+  // Last real map drawn in the preview, reused for the instant first
+  // paint of the next preview of the same spot (e.g. while the zoom
+  // slider moves) so the map never flashes blank while new tiles load.
+  let lastPreviewMap = null; // { key, canvas }
+  const PREVIEW_FETCH_DEBOUNCE_MS = 220;
+
+  function previewMapKey(row, s) {
+    return [row.lat, row.lng, s.mapSource, s.mapAspect].join('|');
+  }
 
   async function renderPreview() {
     if (!state.rows.length) {
@@ -827,25 +1031,94 @@
 
     const myRequestId = ++previewRequestId;
     const row = state.rows[state.sampleIndex];
-    const dims = getCanvasDims(state.settings);
     const settingsSnapshot = { ...state.settings };
-
-    // draw immediately with a placeholder/no-map first so the UI never
-    // looks frozen while we wait on the network for real tiles
     const previewRow = applyProjectOverride(row, settingsSnapshot);
-    renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, null));
     el.previewRowTag.textContent = `Baris contoh #${state.sampleIndex + 1} dari ${state.rows.length} — ${row.file}`;
 
     const needsMap = settingsSnapshot.showMap && settingsSnapshot.mapSource !== 'offline';
     const needsAuto = settingsSnapshot.autoGeocode || settingsSnapshot.autoElevation || settingsSnapshot.autoWeather;
+    const mapKey = previewMapKey(row, settingsSnapshot);
+    const interimMap = needsMap && lastPreviewMap && lastPreviewMap.key === mapKey ? lastPreviewMap.canvas : null;
+
+    // paint immediately (previous map if we have one for this spot, else
+    // the placeholder) so the UI never looks frozen or blank
+    await paintPreview(previewRow, settingsSnapshot, interimMap, lastPreviewAutoData(row), myRequestId);
+    if (myRequestId !== previewRequestId) return;
+
     if (needsMap || needsAuto) {
+      // let rapid slider changes settle before hitting the network
+      await new Promise(r => setTimeout(r, PREVIEW_FETCH_DEBOUNCE_MS));
+      if (myRequestId !== previewRequestId) return;
       const [mapCanvas, autoData] = await Promise.all([
         needsMap ? resolveMapForRow(row, settingsSnapshot) : Promise.resolve(null),
         needsAuto ? resolveAutoDataForRow(row, settingsSnapshot) : Promise.resolve(null)
       ]);
       if (myRequestId !== previewRequestId) return; // a newer preview request superseded this one
-      renderOverlay(el.previewCanvas, previewRow, buildOverlayOpts(previewRow, dims, settingsSnapshot, mapCanvas, autoData));
+      if (mapCanvas) lastPreviewMap = { key: mapKey, canvas: mapCanvas };
+      if (autoData) _lastAuto = { key: autoKey(row), data: autoData };
+      await paintPreview(previewRow, settingsSnapshot, mapCanvas || interimMap, autoData, myRequestId);
     }
+  }
+
+  // auto-detected data (geocode etc.) for the previewed row, reused for
+  // the instant first paint so the title/flag don't flicker either
+  let _lastAuto = null;
+  function autoKey(row) { return row.lat + '|' + row.lng; }
+  function lastPreviewAutoData(row) {
+    return _lastAuto && _lastAuto.key === autoKey(row) ? _lastAuto.data : null;
+  }
+
+  // ---------- preview on the real photo ----------
+  // Rendered at up to this width (overlay geometry is proportional to
+  // the photo width, so it looks exactly like the full-size result) to
+  // keep slider changes instant even for 12+ MP photos.
+  const PREVIEW_PHOTO_MAX_W = 1600;
+  let previewPhotoCache = { file: null, promise: null };
+
+  function previewPhotoForRow(row) {
+    if (!el.previewOnPhoto.checked || !window.GeoStampPhotos.count()) return null;
+    const matchEl = document.getElementById('attachMatchMode');
+    return window.GeoStampPhotos.findForRow(row, state.sampleIndex, matchEl ? matchEl.value : 'filename');
+  }
+
+  function loadPreviewPhoto(file) {
+    if (previewPhotoCache.file === file) return previewPhotoCache.promise;
+    const old = previewPhotoCache.promise;
+    if (old) old.then(r => r && URL.revokeObjectURL(r.url), () => {});
+    const promise = window.GeoStampHeic.loadImageElement(file, (status) => {
+      if (status === 'converting') el.previewRowTag.textContent = `Mengonversi foto HEIC "${file.name}"… mohon tunggu`;
+    });
+    previewPhotoCache = { file, promise };
+    promise.catch(() => { if (previewPhotoCache.file === file) previewPhotoCache = { file: null, promise: null }; });
+    return promise;
+  }
+
+  async function paintPreview(row, settings, mapCanvas, autoData, requestId) {
+    await fontsReady;
+    const photo = previewPhotoForRow(row);
+    el.previewPhotoName.textContent = photo ? photo.name : 'tidak ada foto dengan nama yang cocok';
+    if (photo) {
+      let loaded = null;
+      try { loaded = await loadPreviewPhoto(photo); } catch (e) { console.warn('Preview photo failed to load:', e); }
+      if (requestId != null && requestId !== previewRequestId) return;
+      if (loaded) {
+        const img = loaded.img;
+        const W = Math.min(img.naturalWidth, PREVIEW_PHOTO_MAX_W);
+        const H = Math.round(W * img.naturalHeight / img.naturalWidth);
+        const overlay = document.createElement('canvas');
+        renderOverlay(overlay, row, buildOverlayOpts(row, { w: W, h: H }, settings, mapCanvas, autoData));
+        const pc = el.previewCanvas;
+        pc.width = W;
+        pc.height = H;
+        const pctx = pc.getContext('2d');
+        pctx.drawImage(img, 0, 0, W, H);
+        pctx.drawImage(overlay, 0, 0);
+        el.previewRowTag.textContent = `Baris #${state.sampleIndex + 1} dari ${state.rows.length} — di atas foto ${photo.name}`;
+        return;
+      }
+    }
+    const dims = getCanvasDims(settings);
+    renderOverlay(el.previewCanvas, row, buildOverlayOpts(row, dims, settings, mapCanvas, autoData));
   }
 
   /**
@@ -870,6 +1143,8 @@
     return {
       template: settings.template,
       logoImg: state.logoImg,
+      logoIsCustom: logoSource === 'upload',
+      badgeIconImg: state.badgeIconImg,
       mapImg: mapCanvas,
       width: dims.w,
       height: dims.h,
@@ -893,7 +1168,14 @@
       gmtOffset: settings.gmtOffset,
       showTime: settings.showTime,
       mapAspect: settings.mapAspect,
+      mapScale: settings.mapScale,
+      mapLabelShow: settings.mapLabelShow,
+      mapLabelText: settings.mapLabelText,
+      showMapCone: settings.showMapCone,
+      mapConeBearing: settings.mapConeBearing,
       watermarkLang: settings.watermarkLang,
+      latLngFormat: settings.latLngFormat,
+      timeFormat: settings.timeFormat,
       showGeoCity: settings.showGeoCity,
       showGeoProvince: settings.showGeoProvince,
       showGeoCountry: settings.showGeoCountry,
@@ -1007,6 +1289,7 @@
   }
 
   async function runGenerationInner() {
+    await fontsReady;
     const dims = getCanvasDims(state.settings);
     if (!dims.w || !dims.h || isNaN(dims.w) || isNaN(dims.h)) {
       throw new Error('Ukuran kanvas tidak valid (' + dims.w + 'x' + dims.h + ').');
@@ -1178,6 +1461,8 @@
   // exactly the same data and look the user configured on tab 1.
   window.GeoStamp = {
     getRows: () => state.rows,
+    importPhotoRows: (rows, files) => importPhotoRows(rows, files),
+    fontsReady: () => fontsReady,
     getLogo: () => state.logoImg,
     getSettings: () => ({ ...state.settings }),
     getDims: () => getCanvasDims(state.settings),
