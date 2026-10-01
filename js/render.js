@@ -319,9 +319,26 @@ function measureBadgeWidth(ctx, h, logoImg, appLabel, badgeStyle) {
   }
 }
 
-// Font stack for Template 2: the bundled Roboto (css/style.css) — the
-// Android system font the real GPS Map Camera app draws its stamp with.
-const STAMP_FONT = '"GeoStamp Roboto", Roboto, Arial, sans-serif';
+// Template 2 text fonts ("Font Watermark" setting). Each profile carries
+// its own calibration, fitted against a real stamp by matching the ink
+// extents of every word/line: glyph sizes in px at a 1500px-wide photo,
+// plus word-space / digit / number-punctuation width adjustments.
+//   inter  — default. The iPhone app draws in Apple's SF Pro (licensed
+//            for Apple platforms only); Inter is the closest free match and
+//            fits the real stamp with no spacing adjustment at all
+//            (mean residual ~2px, the JPEG limit).
+//   system — the device's own UI font: real SF Pro when opened on an
+//            iPhone/iPad/Mac, otherwise falls back to Inter.
+//   roboto — Android's font (proportional digits, see
+//            libs/fonts/roboto/README), with the spacing fixes it needs.
+const STAMP_FONTS = {
+  inter: { family: '"GeoStamp Inter", Inter, Arial, sans-serif', title: 49.1, body: 31, badge: 28.1, space: 0, digit: 1, punct: 1 },
+  system: { family: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "GeoStamp Inter", sans-serif', title: 49.1, body: 31, badge: 28.1, space: 0, digit: 1, punct: 1 },
+  roboto: { family: '"GeoStamp Roboto", Roboto, Arial, sans-serif', title: 51.2, body: 32.2, badge: 29.8, space: 0.065, digit: 1.04, punct: 0.95 }
+};
+// active profile for the stamp-text helpers below; set at the start of
+// each (synchronous) Template 2 render
+let STAMP = STAMP_FONTS.inter;
 
 // Roboto's vertical metrics (units/em 2048: hhea ascender 1900, descender
 // 500). Android lays out TextView lines with exactly these, so baselines
@@ -329,18 +346,6 @@ const STAMP_FONT = '"GeoStamp Roboto", Roboto, Arial, sans-serif';
 const ROBOTO_ASCENT = 1900 / 2048;
 const ROBOTO_DESCENT = 500 / 2048;
 const ROBOTO_LINE = ROBOTO_ASCENT + ROBOTO_DESCENT;
-
-// Fine spacing differences between the app's Android text rendering and
-// a browser Roboto render, fitted against a real stamp by matching the
-// ink extents of every word/line (mean residual ~2px, the JPEG limit).
-// The bundled Roboto already uses proportional digits like the app
-// (libs/fonts/roboto/README). Letters match exactly; on top of that the
-// app's word spaces are +0.065em wider, digits ~4% wider and number
-// punctuation ~5% narrower. Applying the same makes line widths — and
-// therefore where lines wrap — come out like the app's.
-const STAMP_SPACE_EXTRA_EM = 0.065;
-const STAMP_DIGIT_SX = 1.04;
-const STAMP_PUNCT_SX = 0.95;
 
 function stampRuns(text) {
   const out = [];
@@ -359,17 +364,17 @@ function stampRuns(text) {
 function measureStampText(ctx, text, fontPx) {
   let w = 0;
   for (const [t, run] of stampRuns(text)) {
-    if (t === 's') w += run.length * (ctx.measureText(' ').width + STAMP_SPACE_EXTRA_EM * fontPx);
-    else w += ctx.measureText(run).width * (t === 'd' ? STAMP_DIGIT_SX : t === 'p' ? STAMP_PUNCT_SX : 1);
+    if (t === 's') w += run.length * (ctx.measureText(' ').width + STAMP.space * fontPx);
+    else w += ctx.measureText(run).width * (t === 'd' ? STAMP.digit : t === 'p' ? STAMP.punct : 1);
   }
   return w;
 }
 
-/** fillText with the app's spacing (see STAMP_* above). Returns the end x. */
+/** fillText with the active profile's spacing (see STAMP_FONTS). Returns the end x. */
 function fillStampText(ctx, text, x, y, fontPx) {
   for (const [t, run] of stampRuns(text)) {
-    if (t === 's') { x += run.length * (ctx.measureText(' ').width + STAMP_SPACE_EXTRA_EM * fontPx); continue; }
-    const k = t === 'd' ? STAMP_DIGIT_SX : t === 'p' ? STAMP_PUNCT_SX : 1;
+    if (t === 's') { x += run.length * (ctx.measureText(' ').width + STAMP.space * fontPx); continue; }
+    const k = t === 'd' ? STAMP.digit : t === 'p' ? STAMP.punct : 1;
     if (k === 1) {
       ctx.fillText(run, x, y);
     } else {
@@ -479,14 +484,19 @@ function drawGooglePin(ctx, tipX, tipY, mapSize) {
 
 /**
  * Blue "camera facing" cone from the pin tip, like the app draws from
- * the phone's compass. bearingDeg is a compass bearing (0 = north,
- * 90 = east, clockwise).
+ * the phone's compass: solid near the pin, fading out toward its outer
+ * end. bearingDeg is a compass bearing (0 = north, 90 = east, clockwise).
  */
 function drawDirectionCone(ctx, cx, cy, radius, bearingDeg) {
   const center = (bearingDeg - 90) * Math.PI / 180;
   const half = 30 * Math.PI / 180;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  g.addColorStop(0, 'rgba(40, 80, 200, 0.62)');
+  g.addColorStop(0.55, 'rgba(40, 80, 200, 0.55)');
+  g.addColorStop(0.85, 'rgba(40, 80, 200, 0.25)');
+  g.addColorStop(1, 'rgba(40, 80, 200, 0)');
   ctx.save();
-  ctx.fillStyle = 'rgba(40, 80, 200, 0.55)';
+  ctx.fillStyle = g;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.arc(cx, cy, radius, center - half, center + half, false);
@@ -512,11 +522,24 @@ function parseBearing(value) {
  * outline, like the map-provider logo in the app's thumbnail). Size and
  * position measured relative to the map from a real stamp.
  */
-function drawMapCornerLabel(ctx, x, y, w, h, text) {
+function drawMapCornerLabel(ctx, x, y, w, h, text, logoImg) {
   const s = Math.min(w, h);
+  if (logoImg && /^google$/i.test(String(text).trim())) {
+    // the real logo artwork (white letters + dark halo, transparent
+    // background — assets/map-label-google.png). Its white letters span
+    // MAP_LOGO_INK within the image; placed so they land where a real
+    // stamp has them: 0.0925 x map in from the left, 0.705 x map wide,
+    // descender 0.11 x map above the bottom.
+    const ink = MAP_LOGO_INK;
+    const k = (s * 0.705) / (ink.x1 - ink.x0);
+    const dx = x + s * 0.0925 - ink.x0 * k;
+    const dy = y + h - s * 0.11 - ink.y1 * k;
+    ctx.drawImage(logoImg, dx, dy, logoImg.width * k, logoImg.height * k);
+    return;
+  }
   const fontPx = s * 0.218;
   ctx.save();
-  ctx.font = `400 ${fontPx}px ${STAMP_FONT}`;
+  ctx.font = `400 ${fontPx}px ${STAMP.family}`;
   if ('letterSpacing' in ctx) ctx.letterSpacing = `${(fontPx * 0.038).toFixed(2)}px`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
@@ -533,6 +556,8 @@ function drawMapCornerLabel(ctx, x, y, w, h, text) {
   ctx.fillText(text, tx, ty);
   ctx.restore();
 }
+// white-letter bounds inside assets/map-label-google.png (1046x368)
+const MAP_LOGO_INK = { x0: 31, x1: 1014, y0: 32, y1: 336 };
 
 /**
  * Draw the whole map thumbnail: imagery (or the offline placeholder),
@@ -556,7 +581,7 @@ function drawMapThumb(ctx, x, y, w, h, radius, opts, row) {
     drawDirectionCone(ctx, cx, cy, s * 0.25, bearing);
   }
   if (opts.showMapPin !== false) drawGooglePin(ctx, cx, cy, s);
-  if (opts.mapLabelShow && opts.mapLabelText) drawMapCornerLabel(ctx, x, y, w, h, opts.mapLabelText);
+  if (opts.mapLabelShow && opts.mapLabelText) drawMapCornerLabel(ctx, x, y, w, h, opts.mapLabelText, opts.mapLabelLogoImg);
   ctx.restore();
 }
 
@@ -584,27 +609,34 @@ function resolveTitleFlag(row, geo, opts, titleText) {
 }
 
 /**
- * Draw a flag in the (x,y,w,h) box. Indonesia is self-drawn in the shape
- * of the Android emoji flag the app appends (\uD83C\uDDEE\uD83C\uDDE9): a gently
- * waving red-over-white flag with a faint edge — top/bottom edge curves
- * measured from a real stamp. Other countries use their fetched flag
- * image, clipped to the same waving outline.
+ * Draw a flag in the (x,y,w,h) box, shaped like the iPhone (Apple) emoji
+ * flag the app appends to the title: a 3:2 flag with small rounded
+ * corners whose top and bottom edges ripple together (sag left of
+ * center, rising toward the right end),
+ * a soft cloth sheen, and a faint edge. Indonesia is self-drawn (never
+ * depends on the flag CDN); other countries use their fetched image,
+ * clipped to the same shape.
  */
 function drawFlagBox(ctx, flag, x, y, w, h) {
   if (!flag) return;
   const N = 24;
-  const top = (t) => y + 0.043 * h * (1 + Math.sin(1.5 * Math.PI * t));
-  const bottom = (t) => y + h - 0.043 * h * (1 - Math.cos(Math.PI * t));
+  // ripple measured from the iPhone emoji: both edges sag slightly just
+  // left of the middle and rise toward the fly (right) end
+  const wave = (t) => h * (0.042 + 0.168 * t - 0.21 * t * t);
+  const top = (t) => y + wave(t);
+  const bottom = (t) => y + h * 0.924 + wave(t);
+  const r = h * 0.07;
   const outline = () => {
     ctx.beginPath();
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      if (i === 0) ctx.moveTo(x, top(0)); else ctx.lineTo(x + w * t, top(t));
-    }
-    for (let i = N; i >= 0; i--) {
-      const t = i / N;
-      ctx.lineTo(x + w * t, bottom(t));
-    }
+    ctx.moveTo(x + r, top(r / w));
+    for (let i = 1; i <= N; i++) { const t = i / N; ctx.lineTo(x + w * t - (i === N ? r : 0), top(Math.min(t, 1 - r / w))); }
+    ctx.quadraticCurveTo(x + w, top(1), x + w, top(1) + r);
+    ctx.lineTo(x + w, bottom(1) - r);
+    ctx.quadraticCurveTo(x + w, bottom(1), x + w - r, bottom(1 - r / w));
+    for (let i = N - 1; i >= 0; i--) { const t = i / N; ctx.lineTo(x + w * t + (i === 0 ? r : 0), bottom(Math.max(t, r / w))); }
+    ctx.quadraticCurveTo(x, bottom(0), x, bottom(0) - r);
+    ctx.lineTo(x, top(0) + r);
+    ctx.quadraticCurveTo(x, top(0), x + r, top(r / w));
     ctx.closePath();
   };
   ctx.save();
@@ -613,34 +645,30 @@ function drawFlagBox(ctx, flag, x, y, w, h) {
   if (flag.kind === 'id') {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#FF0000';
+    ctx.fillStyle = '#FF1010';
     ctx.beginPath();
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      if (i === 0) ctx.moveTo(x, top(0)); else ctx.lineTo(x + w * t, top(t));
-    }
-    for (let i = N; i >= 0; i--) {
-      const t = i / N;
-      ctx.lineTo(x + w * t, (top(t) + bottom(t)) / 2);
-    }
+    ctx.moveTo(x, y - 1);
+    ctx.lineTo(x + w, y - 1);
+    for (let i = N; i >= 0; i--) { const t = i / N; ctx.lineTo(x + w * t, (top(t) + bottom(t)) / 2); }
     ctx.closePath();
     ctx.fill();
   } else if (flag.img) {
     drawImageCover(ctx, flag.img, x, y, w, h);
   }
-  // soft fold shading along the wave
+  // soft cloth sheen along the ripple
   const g = ctx.createLinearGradient(x, 0, x + w, 0);
-  g.addColorStop(0, 'rgba(0,0,0,0.10)');
-  g.addColorStop(0.35, 'rgba(0,0,0,0)');
-  g.addColorStop(0.7, 'rgba(0,0,0,0.06)');
-  g.addColorStop(1, 'rgba(0,0,0,0)');
+  g.addColorStop(0, 'rgba(255,255,255,0.10)');
+  g.addColorStop(0.3, 'rgba(0,0,0,0.04)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.08)');
+  g.addColorStop(0.85, 'rgba(0,0,0,0.05)');
+  g.addColorStop(1, 'rgba(255,255,255,0.06)');
   ctx.fillStyle = g;
   ctx.fillRect(x, y, w, h);
   ctx.restore();
   ctx.save();
   outline();
   ctx.lineWidth = Math.max(1, h * 0.03);
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
   ctx.stroke();
   ctx.restore();
 }
@@ -664,7 +692,7 @@ function wrapBalanced(ctx, text, maxWidth, maxLines, tailWidth, fontPx) {
   if (hasTail) tokens.push(tailWidth);
   const n = tokens.length;
   if (!n) return { lines: [], words };
-  const space = ctx.measureText(' ').width + STAMP_SPACE_EXTRA_EM * fontPx;
+  const space = ctx.measureText(' ').width + STAMP.space * fontPx;
   const lineW = (i, j) => { // tokens i..j inclusive
     let w = 0;
     for (let k = i; k <= j; k++) w += tokens[k];
@@ -1174,18 +1202,20 @@ function renderOverlayTemplate2(canvas, row, opts) {
   // ---- fixed geometry ----
   const mL = 77 * U, mR = 75 * U, mB = 33 * U, mT = 33 * U;
   const mapGap = 32 * U;
-  const padTop = 48.5 * U, padBottom = 44 * U, padLeft = 31 * U, padRight = 6 * U;
+  const padTop = 48.5 * U, padBottom = 44 * U, padLeft = 31 * U, padRight = 2 * U;
   const radius = Math.max(0, (opts.cornerRadius != null ? opts.cornerRadius : 10) * 1.3 * U);
-  // glyphs are drawn at titleFont/bodyFont; line spacing follows the
-  // app's measured metrics (51.2 / 32 — Android's ascent+descent)
-  const titleFont = 51.2 * U * F;
-  const bodyFont = 32.2 * U * F;
+  // glyphs are drawn at the font profile's sizes; line spacing and the
+  // flag follow the stamp's measured metrics (title 51.2 / body 32 units)
+  STAMP = STAMP_FONTS[opts.stampFont] || STAMP_FONTS.inter;
+  const titleFont = STAMP.title * U * F;
+  const bodyFont = STAMP.body * U * F;
+  const titleMetric = 51.2 * U * F;
   const bodyMetric = 32 * U * F;
-  const titleFontCss = `400 ${titleFont}px ${STAMP_FONT}`;
-  const bodyFontCss = `400 ${bodyFont}px ${STAMP_FONT}`;
-  const flagW = titleFont * (60 / 51.2);
-  const flagH = titleFont * (40 / 51.2);
-  const flagGap = titleFont * (17 / 51.2);
+  const titleFontCss = `400 ${titleFont}px ${STAMP.family}`;
+  const bodyFontCss = `400 ${bodyFont}px ${STAMP.family}`;
+  const flagW = titleMetric * (60 / 51.2);
+  const flagH = titleMetric * (40 / 51.2);
+  const flagGap = titleMetric * (17 / 51.2);
 
   const widthPct = (opts.overlayWidthPct != null ? opts.overlayWidthPct : 100) / 100;
   const blockW = Math.max((W - mL - mR) * widthPct, 360 * U);
@@ -1195,7 +1225,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
   const bS = (opts.badgeScale != null ? opts.badgeScale : 100) / 100;
   const badgeH = badgeStyle === 'none' ? 0 : 77 * U * bS;
   const badgeLabel = 'GPS Map Camera';
-  const badgeFont = 29.8 * U * bS;
+  const badgeFont = STAMP.badge * U * bS;
   const useIconBadge = badgeStyle === 'logo' && !opts.logoIsCustom && opts.badgeIconImg;
 
   // ---- layout: text wrapping depends on the box width, which depends on
@@ -1207,13 +1237,13 @@ function renderOverlayTemplate2(canvas, row, opts) {
     const boxW = blockW - (opts.showMap ? mapGuess.mapW + mapGap : 0);
     const textW = Math.max(20, boxW - padLeft - padRight);
     ctx.font = titleFontCss;
-    const titleSpace = ctx.measureText(' ').width + STAMP_SPACE_EXTRA_EM * titleFont;
+    const titleSpace = ctx.measureText(' ').width + STAMP.space * titleFont;
     const titleWrap = titleText ? wrapBalanced(ctx, titleText, textW, 3, flag ? flagGap + flagW - titleSpace : 0, titleFont) : null;
     ctx.font = bodyFontCss;
     const addrWrap = addressText ? wrapBalanced(ctx, addressText, textW, 4, 0, bodyFont) : null;
 
     const groups = [];
-    if (titleWrap && titleWrap.lines.length) groups.push({ font: titleFont, count: titleWrap.lines.length });
+    if (titleWrap && titleWrap.lines.length) groups.push({ font: titleMetric, count: titleWrap.lines.length });
     let bodyCount = (addrWrap ? addrWrap.lines.length : 0);
     if (latLngLine) bodyCount++;
     if (dateLine) bodyCount++;
@@ -1250,7 +1280,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
   let badgeW = 0;
   if (badgeH) {
     if (useIconBadge) {
-      ctx.font = `400 ${badgeFont}px ${STAMP_FONT}`;
+      ctx.font = `400 ${badgeFont}px ${STAMP.family}`;
       badgeW = (15 + 46 + 16.5 + 18.5) * U * bS + measureStampText(ctx, badgeLabel, badgeFont);
     } else {
       badgeW = measureBadgeWidth(ctx, badgeH, opts.logoImg, badgeLabel, badgeStyle);
@@ -1301,7 +1331,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
       const iconS = 46 * U * bS;
       ctx.drawImage(opts.badgeIconImg, badgeX + 15 * U * bS, badgeY + (badgeH - iconS) / 2, iconS, iconS);
       ctx.save();
-      ctx.font = `400 ${badgeFont}px ${STAMP_FONT}`;
+      ctx.font = `400 ${badgeFont}px ${STAMP.family}`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
@@ -1335,7 +1365,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
     ctx.font = titleFontCss;
     const nWords = titleWrap.words.length;
     titleWrap.lines.forEach(([i, j], li) => {
-      const y = nextBaseline(titleFont);
+      const y = nextBaseline(titleMetric);
       const lastWordIdx = Math.min(j, nWords - 1);
       let lineText = i < nWords ? titleWrap.words.slice(i, lastWordIdx + 1).join(' ') : '';
       if (titleWrap.overflow && li === titleWrap.lines.length - 1) lineText = truncateStampText(ctx, lineText, textW, titleFont);
@@ -1343,7 +1373,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
       const hasFlagHere = titleWrap.hasTail && j === titleWrap.tokens.length - 1;
       if (flag && hasFlagHere) {
         const fx = lineText ? lineEnd + flagGap : penX;
-        drawFlagBox(ctx, flag, fx, y + titleFont * (2 / 51.2) - flagH, flagW, flagH);
+        drawFlagBox(ctx, flag, fx, y + titleMetric * (2 / 51.2) - flagH, flagW, flagH);
       }
     });
   }

@@ -15,20 +15,26 @@
     mapImg: null,        // reserved (unused directly; map thumbnails are built per-row now)
     sampleIndex: 0,
     settings: loadSettings(),
-    badgeIconImg: null   // app icon for Template 2's badge (icon + "GPS Map Camera" text, like the app)
+    badgeIconImg: null,  // app icon for Template 2's badge (icon + "GPS Map Camera" text, like the app)
+    mapLabelLogoImg: null // Google logo artwork for the map corner label
   };
 
   // Template 2 draws with the bundled Roboto; canvas text silently falls
   // back to another font if it isn't loaded yet, so every render waits
   // for it first (instant after the first time).
   const fontsReady = (document.fonts && document.fonts.load)
-    ? Promise.all([400, 500].map(w => document.fonts.load(`${w} 32px "GeoStamp Roboto"`, 'Aa0\u00B0'))).then(() => {}, () => {})
+    ? Promise.all([
+      '400 32px "GeoStamp Inter"', '400 32px "GeoStamp Roboto"', '500 32px "GeoStamp Roboto"'
+    ].map(f => document.fonts.load(f, 'Aa0\u00B0'))).then(() => {}, () => {})
     : Promise.resolve();
 
   (function loadBadgeIcon() {
     const img = new Image();
     img.onload = () => { state.badgeIconImg = img; renderPreview(); };
     img.src = 'assets/badge-icon.png';
+    const logo = new Image();
+    logo.onload = () => { state.mapLabelLogoImg = logo; renderPreview(); };
+    logo.src = 'assets/map-label-google.png';
   })();
 
   // ---------- element refs ----------
@@ -97,6 +103,7 @@
     mapAspect: document.getElementById('mapAspect'),
     watermarkLang: document.getElementById('watermarkLang'),
     latLngFormat: document.getElementById('latLngFormat'),
+    stampFont: document.getElementById('stampFont'),
     timeFormat: document.getElementById('timeFormat'),
     exactPresetBtn: document.getElementById('exactPresetBtn'),
     noteOverride: document.getElementById('noteOverride'),
@@ -206,6 +213,7 @@
     el.mapAspect.value = s.mapAspect;
     el.watermarkLang.value = s.watermarkLang;
     el.latLngFormat.value = s.latLngFormat;
+    el.stampFont.value = s.stampFont;
     el.timeFormat.value = s.timeFormat;
     el.noteOverride.value = s.noteOverride || '';
     el.contactOverride.value = s.contactOverride || '';
@@ -272,6 +280,7 @@
       mapAspect: el.mapAspect.value,
       watermarkLang: el.watermarkLang.value,
       latLngFormat: el.latLngFormat.value,
+      stampFont: el.stampFont.value,
       timeFormat: el.timeFormat.value,
       noteOverride: el.noteOverride.value,
       contactOverride: el.contactOverride.value,
@@ -347,7 +356,7 @@
     });
   });
 
-  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect, el.watermarkLang, el.latLngFormat, el.timeFormat,
+  [el.overlayTemplate, el.gmtOffset, el.showTime, el.mapAspect, el.watermarkLang, el.latLngFormat, el.timeFormat, el.stampFont,
     el.mapLabelShow, el.showMapCone].forEach(node => {
     node.addEventListener('change', () => {
       updateTemplateFieldVisibility();
@@ -1175,6 +1184,8 @@
       mapConeBearing: settings.mapConeBearing,
       watermarkLang: settings.watermarkLang,
       latLngFormat: settings.latLngFormat,
+      stampFont: settings.stampFont,
+      mapLabelLogoImg: state.mapLabelLogoImg,
       timeFormat: settings.timeFormat,
       showGeoCity: settings.showGeoCity,
       showGeoProvince: settings.showGeoProvince,

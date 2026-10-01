@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS = {
   template: 'classic',  // 'classic' (Template 1) | 'gpscam2' (Template 2)
   gmtOffset: '+08:00',  // GMT offset shown on Template 2's date line
   showTime: true,        // Template 2 only: include time-of-day on the date line
+  stampFont: 'inter',    // Template 2 only: 'inter' (closest free match to the iPhone app's SF Pro) | 'system' (device font: real SF Pro on Apple devices) | 'roboto' (Android)
   timeFormat: '12h0',    // Template 2 only: '12h0' "03:24 PM" (like the app) | '12h' "3:24 PM" | '24h' "15:24"
   latLngFormat: 'deg',   // Template 2 only: 'deg' "Lat -0.855322° Long 117.265612°" (like the app) | 'plain' | 'dir' (LS/BT)
   watermarkLang: 'en',   // Template 2 only: day-name language — 'en' (Thursday) | 'id' (Kamis)
@@ -90,6 +91,7 @@ const EXACT_GPSCAM_PRESET = {
   mapConeBearing: 106,
   watermarkLang: 'id',
   showTime: true,
+  stampFont: 'inter',
   timeFormat: '12h0',
   latLngFormat: 'deg',
   autoGeocode: true,
