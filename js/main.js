@@ -19,7 +19,11 @@
     mapLabelLogoImg: null // Google logo artwork for the map corner label
   };
 
-  // Template 2 draws with the bundled Roboto; canvas text silently falls
+  // preview drag/resize state (see "drag / resize the stamp" below)
+  let lastStampBox = null; // stamp bounds in preview-canvas pixels (+ canvas W/H)
+  let stampDrag = null;
+
+  // Template 2 draws with the bundled Inter/Roboto; canvas text silently falls
   // back to another font if it isn't loaded yet, so every render waits
   // for it first (instant after the first time).
   const fontsReady = (document.fonts && document.fonts.load)
@@ -51,6 +55,9 @@
     folderDefaultLng: document.getElementById('folderDefaultLng'),
     folderApplyCoordsBtn: document.getElementById('folderApplyCoordsBtn'),
     previewOnPhotoRow: document.getElementById('previewOnPhotoRow'),
+    previewStampFrame: document.getElementById('previewStampFrame'),
+    previewStampHandle: document.getElementById('previewStampHandle'),
+    resetPlacementBtn: document.getElementById('resetPlacementBtn'),
     previewOnPhoto: document.getElementById('previewOnPhoto'),
     previewPhotoName: document.getElementById('previewPhotoName'),
     linkedPhotosBox: document.getElementById('linkedPhotosBox'),
@@ -198,6 +205,11 @@
   });
   applyTheme(loadTheme());
 
+  // "97.5%", "-3.2%", "100%" — trims a trailing .0
+  function fmtPct(v) {
+    return (Math.round(Number(v) * 10) / 10) + '%';
+  }
+
   // ---------- settings <-> UI ----------
   function applySettingsToUI(s) {
     el.overlayTemplate.value = s.template;
@@ -213,7 +225,7 @@
     el.mapAspect.value = s.mapAspect;
     el.watermarkLang.value = s.watermarkLang;
     el.latLngFormat.value = s.latLngFormat;
-    el.stampFont.value = s.stampFont;
+    el.stampFont.value = s.stampFont === 'roboto' ? 'roboto' : 'inter';
     el.timeFormat.value = s.timeFormat;
     el.noteOverride.value = s.noteOverride || '';
     el.contactOverride.value = s.contactOverride || '';
@@ -227,13 +239,13 @@
     el.overlayPos.value = s.overlayPos;
     el.overlayAlignH.value = s.overlayAlignH;
     el.overlayScale.value = s.overlayScale;
-    el.overlayScaleVal.textContent = s.overlayScale + '%';
+    el.overlayScaleVal.textContent = fmtPct(s.overlayScale);
     el.overlayWidthPct.value = s.overlayWidthPct;
     el.overlayWidthPctVal.textContent = s.overlayWidthPct + '%';
     el.offsetX.value = s.offsetX;
-    el.offsetXVal.textContent = s.offsetX + '%';
+    el.offsetXVal.textContent = fmtPct(s.offsetX);
     el.offsetY.value = s.offsetY;
-    el.offsetYVal.textContent = s.offsetY + '%';
+    el.offsetYVal.textContent = fmtPct(s.offsetY);
     el.bgOpacity.value = s.bgOpacity;
     el.bgOpacityVal.textContent = s.bgOpacity + '%';
     el.fontColor.value = s.fontColor;
@@ -291,10 +303,10 @@
       dateFormat: el.dateFormat.value,
       overlayPos: el.overlayPos.value,
       overlayAlignH: el.overlayAlignH.value,
-      overlayScale: parseInt(el.overlayScale.value),
+      overlayScale: parseFloat(el.overlayScale.value),
       overlayWidthPct: parseInt(el.overlayWidthPct.value),
-      offsetX: parseInt(el.offsetX.value),
-      offsetY: parseInt(el.offsetY.value),
+      offsetX: parseFloat(el.offsetX.value),
+      offsetY: parseFloat(el.offsetY.value),
       bgOpacity: parseInt(el.bgOpacity.value),
       fontColor: el.fontColorHex.value,
       fontScale: parseInt(el.fontScale.value),
@@ -397,7 +409,7 @@
   });
 
   el.overlayScale.addEventListener('input', () => {
-    el.overlayScaleVal.textContent = el.overlayScale.value + '%';
+    el.overlayScaleVal.textContent = fmtPct(el.overlayScale.value);
     onSettingsChanged();
   });
   el.overlayWidthPct.addEventListener('input', () => {
@@ -405,11 +417,11 @@
     onSettingsChanged();
   });
   el.offsetX.addEventListener('input', () => {
-    el.offsetXVal.textContent = el.offsetX.value + '%';
+    el.offsetXVal.textContent = fmtPct(el.offsetX.value);
     onSettingsChanged();
   });
   el.offsetY.addEventListener('input', () => {
-    el.offsetYVal.textContent = el.offsetY.value + '%';
+    el.offsetYVal.textContent = fmtPct(el.offsetY.value);
     onSettingsChanged();
   });
   el.bgOpacity.addEventListener('input', () => {
@@ -587,7 +599,7 @@
     window.GeoStampPhotos.set(files);
     setDataInputMode('folder');
     el.folderInfo.classList.remove('hidden');
-    el.folderInfo.innerHTML = `<span><strong>${rows.length}</strong> foto dimuat dari Tab 4 (Buat CSV dari Foto).</span>`;
+    el.folderInfo.innerHTML = `<span><strong>${rows.length}</strong> foto dimuat dari menu Buat CSV dari Foto.</span>`;
     refreshAfterRowsChanged('first');
   }
 
@@ -1034,6 +1046,8 @@
   async function renderPreview() {
     if (!state.rows.length) {
       el.previewEmpty.classList.remove('hidden');
+      lastStampBox = null;
+      positionStampFrame();
       return;
     }
     el.previewEmpty.classList.add('hidden');
@@ -1116,6 +1130,7 @@
         const H = Math.round(W * img.naturalHeight / img.naturalWidth);
         const overlay = document.createElement('canvas');
         renderOverlay(overlay, row, buildOverlayOpts(row, { w: W, h: H }, settings, mapCanvas, autoData));
+        lastStampBox = overlay.__stampBox ? { ...overlay.__stampBox, W, H } : null;
         const pc = el.previewCanvas;
         pc.width = W;
         pc.height = H;
@@ -1123,12 +1138,113 @@
         pctx.drawImage(img, 0, 0, W, H);
         pctx.drawImage(overlay, 0, 0);
         el.previewRowTag.textContent = `Baris #${state.sampleIndex + 1} dari ${state.rows.length} — di atas foto ${photo.name}`;
+        positionStampFrame();
         return;
       }
     }
     const dims = getCanvasDims(settings);
     renderOverlay(el.previewCanvas, row, buildOverlayOpts(row, dims, settings, mapCanvas, autoData));
+    lastStampBox = el.previewCanvas.__stampBox ? { ...el.previewCanvas.__stampBox, W: dims.w, H: dims.h } : null;
+    positionStampFrame();
   }
+
+  // ---------- drag / resize the stamp directly in the preview ----------
+  // A dashed frame (HTML, so it never ends up in "Download Sample PNG")
+  // sits over the drawn stamp: dragging it changes "Geser Horizontal/
+  // Vertikal", dragging its corner dot changes "Ukuran Overlay" — the
+  // same settings the sliders control, so everything stays in sync.
+
+  function stampAnchor(box, s) {
+    // the corner that stays put while resizing (where the stamp is anchored)
+    const ax = s.overlayAlignH === 'right' ? box.x + box.w : s.overlayAlignH === 'center' ? box.x + box.w / 2 : box.x;
+    const ay = s.overlayPos === 'top' ? box.y : box.y + box.h;
+    return { ax, ay };
+  }
+
+  function positionStampFrame() {
+    const f = el.previewStampFrame;
+    const pc = el.previewCanvas;
+    if (!lastStampBox || !state.rows.length || !pc.width) { f.classList.add('hidden'); return; }
+    const wrap = pc.parentElement.getBoundingClientRect();
+    const r = pc.getBoundingClientRect();
+    if (!r.width) { f.classList.add('hidden'); return; }
+    const k = r.width / pc.width;
+    const b = lastStampBox;
+    f.style.left = `${r.left - wrap.left + b.x * k}px`;
+    f.style.top = `${r.top - wrap.top + b.y * k}px`;
+    f.style.width = `${b.w * k}px`;
+    f.style.height = `${b.h * k}px`;
+    const s = state.settings;
+    f.dataset.handleX = s.overlayAlignH === 'right' ? 'left' : 'right';
+    f.dataset.handleY = s.overlayPos === 'top' ? 'bottom' : 'top';
+    f.classList.remove('hidden');
+  }
+  window.addEventListener('resize', positionStampFrame);
+  window.addEventListener('geostamp:tabchange', () => setTimeout(positionStampFrame, 0));
+
+  function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  el.previewStampFrame.addEventListener('pointerdown', (e) => {
+    if (!lastStampBox) return;
+    e.preventDefault();
+    el.previewStampFrame.setPointerCapture(e.pointerId);
+    const r = el.previewCanvas.getBoundingClientRect();
+    stampDrag = {
+      mode: e.target === el.previewStampHandle ? 'resize' : 'move',
+      sx: e.clientX, sy: e.clientY,
+      k: r.width / el.previewCanvas.width,
+      canvasLeft: r.left, canvasTop: r.top,
+      box: { ...lastStampBox },
+      start: { ...state.settings }
+    };
+    el.previewStampFrame.classList.add('dragging');
+  });
+
+  let stampDragFrame = 0;
+  el.previewStampFrame.addEventListener('pointermove', (e) => {
+    if (!stampDrag) return;
+    const d = stampDrag;
+    const s0 = d.start;
+    if (d.mode === 'move') {
+      const dx = (e.clientX - d.sx) / d.k;
+      const dy = (e.clientY - d.sy) / d.k;
+      const nx = clampNum(Math.round((s0.offsetX + dx / d.box.W * 100) * 10) / 10, -50, 50);
+      const ny = clampNum(Math.round((s0.offsetY + dy / d.box.H * 100) * 10) / 10, -50, 50);
+      el.offsetX.value = nx; el.offsetXVal.textContent = fmtPct(nx);
+      el.offsetY.value = ny; el.offsetYVal.textContent = fmtPct(ny);
+    } else {
+      const { ax, ay } = stampAnchor(d.box, s0);
+      const toCanvas = (cx, cy) => ({ x: (cx - d.canvasLeft) / d.k, y: (cy - d.canvasTop) / d.k });
+      const p0 = toCanvas(d.sx, d.sy);
+      const p1 = toCanvas(e.clientX, e.clientY);
+      // the stamp keeps (almost) its full width when scaled — its height,
+      // text and map shrink/grow — so the corner dot follows the pointer
+      // vertically: drag toward the anchored edge to shrink, away to grow
+      const d0 = Math.abs(p0.y - ay) || 1;
+      const d1 = Math.max(0, (p1.y - ay) * Math.sign(p0.y - ay));
+      const ns = clampNum(Math.round(s0.overlayScale * (d1 / d0) * 2) / 2, 50, 150);
+      el.overlayScale.value = ns; el.overlayScaleVal.textContent = fmtPct(ns);
+    }
+    if (!stampDragFrame) {
+      stampDragFrame = requestAnimationFrame(() => { stampDragFrame = 0; onSettingsChanged(); });
+    }
+  });
+
+  function endStampDrag() {
+    if (!stampDrag) return;
+    stampDrag = null;
+    el.previewStampFrame.classList.remove('dragging');
+    onSettingsChanged();
+  }
+  el.previewStampFrame.addEventListener('pointerup', endStampDrag);
+  el.previewStampFrame.addEventListener('pointercancel', endStampDrag);
+
+  el.resetPlacementBtn.addEventListener('click', () => {
+    el.overlayScale.value = DEFAULT_SETTINGS.overlayScale; el.overlayScaleVal.textContent = fmtPct(DEFAULT_SETTINGS.overlayScale);
+    el.offsetX.value = 0; el.offsetXVal.textContent = fmtPct(0);
+    el.offsetY.value = 0; el.offsetYVal.textContent = fmtPct(0);
+    onSettingsChanged();
+  });
 
   /**
    * Apply Tab 1's "override all rows" settings (Project Name, and for

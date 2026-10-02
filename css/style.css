@@ -1246,3 +1246,36 @@ body { min-height: 100vh; }
 }
 
 .mode-toggle { flex-wrap: wrap; }
+
+/* Preview: draggable/resizable frame over the drawn stamp */
+.stamp-frame {
+  position: absolute;
+  border: 1.5px dashed rgba(255, 255, 255, 0.85);
+  outline: 1px dashed rgba(0, 0, 0, 0.55);
+  outline-offset: -2.5px;
+  border-radius: 6px;
+  cursor: move;
+  touch-action: none;
+  z-index: 2;
+  opacity: 0.55;
+  transition: opacity .15s ease;
+}
+.stamp-frame:hover, .stamp-frame.dragging { opacity: 1; }
+.stamp-frame-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+}
+.stamp-frame[data-handle-x="right"] .stamp-frame-handle { right: -9px; }
+.stamp-frame[data-handle-x="left"] .stamp-frame-handle { left: -9px; }
+.stamp-frame[data-handle-y="top"] .stamp-frame-handle { top: -9px; }
+.stamp-frame[data-handle-y="bottom"] .stamp-frame-handle { bottom: -9px; }
+.stamp-frame[data-handle-x="right"][data-handle-y="top"] .stamp-frame-handle,
+.stamp-frame[data-handle-x="left"][data-handle-y="bottom"] .stamp-frame-handle { cursor: nesw-resize; }
+.stamp-frame[data-handle-x="left"][data-handle-y="top"] .stamp-frame-handle,
+.stamp-frame[data-handle-x="right"][data-handle-y="bottom"] .stamp-frame-handle { cursor: nwse-resize; }
