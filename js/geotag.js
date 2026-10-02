@@ -90,7 +90,7 @@
     let rows = [];
     if (useCsv) {
       rows = (window.GeoStamp ? window.GeoStamp.getRows() : []) || [];
-      if (!rows.length) { alert('CSV belum dimuat di Tab 1. Muat CSV dulu, atau pakai input manual.'); return; }
+      if (!rows.length) { alert('Data belum ada di menu Watermark GPS. Muat CSV, folder foto, atau pakai input manual dulu.'); return; }
     } else {
       const lat = parseFloat(el.lat.value), lng = parseFloat(el.lng.value);
       if (isNaN(lat) || isNaN(lng)) { alert('Masukkan Latitude dan Longitude yang valid.'); return; }

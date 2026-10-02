@@ -25,14 +25,14 @@ Aplikasi web 100% client-side (tanpa backend, tanpa server, tanpa Node/PHP/Pytho
 1. **Isi data foto** — dua cara, bisa dipakai gantian atau digabung:
    - **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Data Foto, isi datamu mengikuti format itu, lalu upload.
    - **Input Manual (satu-satu)** — pilih mode ini kalau cuma mau tes cepat 1–5 foto tanpa bikin file CSV dulu. Isi form (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat, plus field opsional untuk Template 2), klik **"+ Tambah Baris"**, ulangi untuk foto berikutnya. Baris manual ikut ditambahkan ke baris yang sudah ada dari CSV (kalau ada) — dua-duanya bisa digabung.
-   - **Dari Folder Foto (otomatis)** — pilih folder (atau beberapa foto) langsung, tanpa CSV. Tiap foto otomatis jadi satu baris: nama file, tanggal & jam (dari EXIF; kalau tidak ada, dari tanggal file), koordinat GPS (kalau fotonya punya). Untuk foto tanpa GPS (umum untuk kamera di area terbatas), isi Latitude/Longitude sekali lalu klik **"Terapkan ke foto tanpa GPS"**, atau geser pin per foto di peta. Lokasi & alamat dideteksi otomatis dari koordinat. Foto-fotonya langsung terhubung ke Tab 2, dan **preview di kanan menampilkan watermark di atas foto aslinya** — jadi ukuran, posisi, font, dll bisa dipaskan sambil dilihat hasil akhirnya. Setelah pas, klik **"Lanjut: Tempel ke Foto & Download"** di kartu Generate.
+   - **Dari Folder Foto (otomatis)** — pilih folder (atau beberapa foto) langsung, tanpa CSV. Tiap foto otomatis jadi satu baris: nama file, tanggal & jam (dari EXIF; kalau tidak ada, dari tanggal file), koordinat GPS (kalau fotonya punya). Untuk foto tanpa GPS (umum untuk kamera di area terbatas), isi Latitude/Longitude sekali lalu klik **"Terapkan ke foto tanpa GPS"**, atau geser pin per foto di peta. Lokasi & alamat dideteksi otomatis dari koordinat. Foto-fotonya langsung terhubung ke menu Tempel ke Foto, dan **preview di kanan menampilkan watermark di atas foto aslinya** — jadi ukuran, posisi, font, dll bisa dipaskan sambil dilihat hasil akhirnya. Setelah pas, klik **"Lanjut: Tempel ke Foto & Download"** di kartu Generate.
    - Setelah data masuk (dari cara manapun), cek tabel **Preview Data** yang muncul di bawahnya — semua baris ditampilkan lengkap dengan tombol hapus per baris, dan klik satu baris untuk langsung melihat preview overlay-nya di panel kanan. Ini supaya kamu bisa pastikan data yang dimasukkan sudah benar sebelum generate massal.
 2. **(Opsional) Upload logo** — Mode A pakai logo bawaan (embedded), Mode B upload PNG sendiri.
 3. **Atur pengaturan overlay** — resolusi, format tanggal, posisi, opacity, warna & ukuran font, sumber peta, dll.
 4. **Preview** — cek tampilan overlay per baris sebelum generate massal.
 5. **Generate & Download ZIP** — semua PNG dibuat secara batch/asynchronous lalu otomatis di-download sebagai satu file ZIP.
 
-> **Penting:** Data (CSV maupun input manual), logo, dan semua pengaturan overlay yang kamu atur di **Tab 1** dipakai bersama oleh **Tab 2 (Tempel ke Foto)** dan **Tab 3 (Geotag Metadata)** — tidak perlu mengisi ulang di tab lain. Urutan ini (dan alasan tool ini dibuat) juga dijelaskan di banner panduan yang muncul otomatis di bagian atas halaman saat pertama kali dibuka (bisa dibuka/tutup lewat baris "Panduan Cara Pakai" di atas tab).
+> **Penting:** Data (CSV maupun input manual), logo, dan semua pengaturan overlay yang kamu atur di menu **Watermark GPS** dipakai bersama oleh **Tempel ke Foto** dan **Geotag Metadata** — tidak perlu mengisi ulang di tab lain. Urutan ini (dan alasan tool ini dibuat) juga dijelaskan di banner panduan yang muncul otomatis di bagian atas halaman saat pertama kali dibuka (bisa dibuka/tutup lewat baris "Panduan Cara Pakai" di atas tab).
 
 ---
 
@@ -104,17 +104,17 @@ js/
   csv.js        -> parsing CSV + auto-deteksi kolom
   settings.js   -> LocalStorage + export/import preset JSON
   main.js       -> controller UI, preview, batching & ZIP generation
-  mapview.js    -> peta interaktif (Leaflet) + kalender tanggal import di Tab 1
-  csvbuilder.js -> Tab 4, tool ekstraksi nama file/tanggal/GPS dari foto (berdiri sendiri)
-  heicsupport.js -> konversi foto HEIC/HEIF (iPhone) -> JPEG, dipakai Tab 1 (preview di foto), Tab 2 & Tab 3
-  photometa.js  -> baca tanggal/jam + GPS + arah kamera dari EXIF foto (Tab 1 "Dari Folder Foto" & Tab 4)
-  photostore.js -> daftar foto bersama: folder yang dipilih di Tab 1/2/4 langsung terpakai di semua tab
+  mapview.js    -> peta interaktif (Leaflet) + kalender tanggal import di menu Watermark GPS
+  csvbuilder.js -> menu Buat CSV dari Foto, tool ekstraksi nama file/tanggal/GPS dari foto (berdiri sendiri)
+  heicsupport.js -> konversi foto HEIC/HEIF (iPhone) -> JPEG, dipakai menu Watermark GPS (preview di foto), menu Tempel ke Foto & Geotag Metadata
+  photometa.js  -> baca tanggal/jam + GPS + arah kamera dari EXIF foto (menu Watermark GPS "Dari Folder Foto" & menu Buat CSV dari Foto)
+  photostore.js -> daftar foto bersama: folder yang dipilih di menu Watermark GPS, Tempel ke Foto & Buat CSV dari Foto langsung terpakai di semua tab
 libs/
   papaparse.min.js
   jszip.min.js
   FileSaver.min.js
   piexif.min.js
-  leaflet/leaflet.js, leaflet.css, images/  -> peta interaktif di Tab 1 (MIT license)
+  leaflet/leaflet.js, leaflet.css, images/  -> peta interaktif di menu Watermark GPS (MIT license)
   libheif/libheif-bundle.js -> decoder HEIC/HEIF resmi libheif berbasis WASM (LGPL-3.0, lihat "Dukungan Format HEIC/HEIF")
   fonts/inter/  -> font Inter (SIL OFL 1.1) — default Template 2, paling mirip SF Pro (font iPhone)
   fonts/roboto/ -> font Roboto (SIL OFL 1.1) — opsi font Android untuk Template 2
@@ -130,14 +130,14 @@ README.md
 
 ## Preset Template Watermark
 
-Tab 1 punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay", supaya beberapa gaya watermark bisa dipakai tanpa saling menimpa pengaturan satu sama lain. Menambah Template 3 dan seterusnya di masa depan tidak akan mengubah Template 1/2 yang sudah ada.
+menu Watermark GPS punya pilihan **Preset Template** di bagian atas kartu "Pengaturan Overlay", supaya beberapa gaya watermark bisa dipakai tanpa saling menimpa pengaturan satu sama lain. Menambah Template 3 dan seterusnya di masa depan tidak akan mengubah Template 1/2 yang sudah ada.
 
 ### Template 1 — Klasik
 Gaya asli tool ini: kartu mengambang dengan sudut membulat, peta kotak terpisah di kiri, badge logo menempel di pojok kanan-atas kotak teks, baris koordinat format DMS (`6° 12' 31.55" S`). Sama seperti Template 2, judul kota juga menampilkan bendera negara kalau "Deteksi Otomatis dari Koordinat" aktif.
 
 ### Template 2 — GPS Map Camera (persis aplikasi asli)
 Rekonstruksi (digambar ulang lewat Canvas, bukan crop dari aplikasi manapun) dari watermark aplikasi GPS Map Camera, **dikalibrasi per piksel terhadap foto asli dari aplikasinya**: semua ukuran (margin, tinggi badge, ukuran peta, padding, sudut, ukuran font, jarak baris) diukur dari foto asli 1500×2000 lalu diskalakan mengikuti lebar foto — jadi di foto ukuran berapa pun posisinya sama seperti buatan aplikasi. Hasil verifikasi terhadap foto contoh: semua baris teks jatuh di posisi yang sama (selisih ≤1 px), dan pemotongan baris alamat terjadi di kata yang sama persis.
-- **Font Watermark** (pilihan): **Inter** (default) — font gratis yang paling mirip SF Pro, font iPhone yang dipakai aplikasinya; cocok dengan foto asli tanpa koreksi spasi apa pun. **Font sistem perangkat** — SF Pro asli kalau tool dibuka di iPhone/iPad/Mac. **Roboto** — font Android. Inter & Roboto dibundel lokal (`libs/fonts/`).
+- **Font Watermark**: **"Seperti foto dari iPhone"** (default) memakai Inter — font gratis yang paling mirip SF Pro, font iPhone; cocok dengan foto asli tanpa koreksi spasi apa pun. **"Seperti foto dari Android"** memakai Roboto. Keduanya dibundel lokal (`libs/fonts/`).
 - Judul `Kota, Provinsi, Negara` (tidak tebal, hingga 3 baris) + **bendera berkibar** di ujung judul, bentuknya seperti emoji bendera iPhone. Bendera Indonesia digambar sendiri, jadi selalu muncul walau internet/geocoding mati, asal koordinat/teks lokasinya di Indonesia.
 - Alamat lengkap (hingga 4 baris) — dipotong per baris dengan cara yang sama seperti Android (baris dibuat serata mungkin, bukan sekadar "isi penuh lalu pindah baris").
 - Koordinat: `Lat -0.855322° Long 117.265612°`
@@ -190,8 +190,8 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - Template 1 & 2: judul kota/provinsi/negara + bendera negara, dengan baris info geografis (suhu/angin/ketinggian/arah) opsional memakai ikon berwarna (bukan hitam-putih)
 - **Tampilan judul lokasi bisa diatur**: 4 checkbox terpisah (Kota / Provinsi / Negara / Bendera Negara) untuk memilih bagian mana saja yang tampil di judul — bisa dicentang sebagian saja (misal cuma Kota & Negara), berlaku untuk Template 1 & 2 sekaligus. Kalau Kota tidak ditemukan (umum untuk titik di laut/selat), judul otomatis "naik" memakai Provinsi atau Negara yang tersedia, bukan kosong sama sekali
 - Template 2: opsi **Bahasa Watermark** (English / Indonesia) untuk nama hari dan notasi lintang-bujur (LU/LS/BT/BB)
-- **Tab 4 — Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam (EXIF atau file system) + koordinat GPS & lokasi (kalau ada di EXIF-nya) dari sekumpulan foto, dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV, dan tombol Reset untuk memproses file/folder lain
-- **Foto HEIC/HEIF (iPhone)** didukung di Tab 2 & Tab 3 — decode native instan di Safari, fallback otomatis ke konversi WASM (libheif resmi) di browser lain, biasanya hanya beberapa detik per foto (lihat "Dukungan Format HEIC/HEIF")
+- **Buat CSV dari Foto**: tool terpisah untuk mengekstrak nama file + tanggal/jam (EXIF atau file system) + koordinat GPS & lokasi (kalau ada di EXIF-nya) dari sekumpulan foto, dengan tabel hasil yang bisa dikoreksi manual sebelum diunduh sebagai CSV, dan tombol Reset untuk memproses file/folder lain
+- **Foto HEIC/HEIF (iPhone)** didukung di menu Tempel ke Foto & Geotag Metadata — decode native instan di Safari, fallback otomatis ke konversi WASM (libheif resmi) di browser lain, biasanya hanya beberapa detik per foto (lihat "Dukungan Format HEIC/HEIF")
 - Konversi otomatis Decimal Degrees → DMS (`6° 12' 31.55" S`)
 - **Peta asli (Jalan/Satelit) atau placeholder offline**, dengan pin lokasi opsional
 - Logo aplikasi otomatis menyesuaikan rasio gambar (tidak terpotong/gepeng, baik logo persegi maupun lebar) — atau bisa disembunyikan sepenuhnya lewat opsi **Tanpa Logo**
@@ -217,7 +217,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - Cuaca historis (suhu/angin) dari Open-Meteo hanya tersedia untuk rentang tanggal yang didukung arsipnya (umumnya tidak termasuk beberapa hari paling akhir) — kalau tanggal fotonya di luar rentang itu, tool otomatis coba ambil cuaca hari ini sebagai perkiraan; kalau tetap gagal, baris itu dilewati tanpa menghentikan proses.
 - **Catatan, Kontak, dan Arah/bearing tidak bisa dideteksi otomatis** — Catatan &amp; Kontak adalah data internal (tidak ada sumbernya di internet), dan Arah/bearing adalah arah kamera menghadap saat difoto yang dibaca dari sensor kompas HP saat pemotretan — informasi itu tidak tersimpan di mana pun setelah fotonya jadi, jadi memang harus diisi manual kalau dibutuhkan.
 - Peta interaktif di kartu "Peta & Kalender Data" juga butuh koneksi internet untuk memuat gambar tile Jalan/Satelit (sama seperti mode peta di pengaturan overlay); tanpa internet, pin/drag-koordinat dan kalender tetap berfungsi normal, hanya latar peta yang kosong.
-- **Foto HEIC (iPhone)** didukung di Tab 2 & Tab 3 (lihat "Dukungan Format HEIC/HEIF") — instan di Safari (decode native), tapi di browser lain (Chrome/Firefox/Edge) konversinya lewat WebAssembly dan **bisa memakan waktu beberapa detik per foto** (bertambah untuk resolusi sangat tinggi/48 MP) — status "Mengonversi HEIC..." ditampilkan selama proses berlangsung, ini normal bukan macet. Tab 4 belum bisa membaca tanggal EXIF asli dari dalam file HEIC (fallback ke tanggal file, sama seperti foto non-JPG lainnya).
+- **Foto HEIC (iPhone)** didukung di menu Tempel ke Foto & Geotag Metadata (lihat "Dukungan Format HEIC/HEIF") — instan di Safari (decode native), tapi di browser lain (Chrome/Firefox/Edge) konversinya lewat WebAssembly dan **bisa memakan waktu beberapa detik per foto** (bertambah untuk resolusi sangat tinggi/48 MP) — status "Mengonversi HEIC..." ditampilkan selama proses berlangsung, ini normal bukan macet. menu Buat CSV dari Foto belum bisa membaca tanggal EXIF asli dari dalam file HEIC (fallback ke tanggal file, sama seperti foto non-JPG lainnya).
 
 
 ---
@@ -235,7 +235,8 @@ File `contoh-format.csv` disertakan sebagai template. Buka dengan Excel/Google S
 - **Posisi & Ukuran Overlay**: kombinasi 3 kontrol untuk menempatkan overlay di mana saja pada foto:
   - **Posisi Vertikal** (Bawah/Atas) + **Posisi Horizontal** (Kiri/Tengah/Kanan) — kombinasikan untuk posisi apa saja, misal Bawah + Tengah untuk "rata tengah bawah". Posisi Horizontal baru kelihatan bedanya kalau overlay-nya tidak selebar penuh (lihat poin berikutnya).
   - **Lebar Overlay Maksimal** (50–100%): perkecil dari 100% (default, selebar foto seperti sebelumnya) supaya overlay jadi kartu yang lebih ringkas dan Posisi Horizontal punya ruang untuk terlihat efeknya.
-  - **Geser Horizontal / Geser Vertikal (slide manual)** (-25% s.d. +25%): geser halus dari titik Posisi Vertikal/Horizontal di atas untuk penempatan presisi — batas geser dijaga otomatis supaya overlay tidak sampai keluar dari foto.
+  - **Geser Horizontal / Geser Vertikal (slide manual)** (-50% s.d. +50%, per 0,1%): geser halus dari titik Posisi Vertikal/Horizontal di atas untuk penempatan presisi — batas geser dijaga otomatis supaya overlay tidak sampai keluar dari foto.
+  - **Langsung di preview**: kotak putus-putus di sekeliling watermark bisa **digeser** dengan mouse/jari untuk memindah posisi, dan **titik bulat di pojoknya ditarik** untuk memperbesar/memperkecil (Ukuran Overlay 50–150%, per 0,5% — peta, tulisan, dan badge ikut menyesuaikan). Nilainya tersambung ke slider; tombol "Reset posisi & ukuran" mengembalikan ke ukuran asli. Catatan: tinggi kotak mengikuti isi seperti di aplikasi asli — judul yang lebih panjang (3 baris) membuat kotak dan peta sedikit lebih tinggi dibanding judul 2 baris.
 - **Radius Sudut (fillet)**: 0–40px, atur ketajaman sudut kotak/peta/badge. 0 = sudut tajam.
 - **Bayangan (shadow)**: 0–100%, efek bayangan di sekeliling overlay yang ikut ter-render ke PNG (berguna saat ditempel ke foto).
 - **Project Name (override semua baris)**: ketik satu nilai untuk dipakai di semua overlay tanpa mengedit CSV. Kosongkan untuk memakai kolom Lokasi dari CSV.
@@ -255,37 +256,37 @@ Jika halaman masih tampil tanpa styling setelah `.nojekyll` ditambahkan, coba ha
 
 ---
 
-## Fitur Baru: 4-Tab Workflow
+## Fitur Baru: 4 Menu
 
 Aplikasi sekarang punya 4 tab dengan tujuan berbeda:
 
-### Tab 1 — Watermark GPS (fitur asli, sebelumnya bernama "Overlay PNG")
-Generate watermark PNG transparan dari CSV, seperti sebelumnya. Titik mulai semua tab lain — data, logo, dan pengaturan yang diisi di sini dipakai bersama oleh Tab 2 & Tab 3.
+### Watermark GPS (fitur asli, sebelumnya bernama "Overlay PNG")
+Generate watermark PNG transparan dari CSV, seperti sebelumnya. Titik mulai semua tab lain — data, logo, dan pengaturan yang diisi di sini dipakai bersama oleh menu Tempel ke Foto & Geotag Metadata.
 
 #### Peta & Kalender Data
 
-Setelah data diisi (CSV atau Input Manual), Tab 1 menampilkan kartu **"Peta & Kalender Data"** di bagian bawah:
+Setelah data diisi (CSV atau Input Manual), menu Watermark GPS menampilkan kartu **"Peta & Kalender Data"** di bagian bawah:
 
 - **Peta interaktif** (pakai [Leaflet](https://leafletjs.com/), library gratis & open-source, dibundel lokal di `libs/leaflet/` — bukan lewat CDN) menampilkan setiap baris yang punya Latitude/Longitude valid sebagai pin. Kontrol di pojok kanan-atas peta bisa ganti tampilan antara **Jalan** dan **Satelit** (sumber tile sama dengan yang dipakai untuk thumbnail peta di watermark — Esri, gratis tanpa API key).
 - **Geser pin untuk koreksi koordinat** — pin di peta ini bisa di-drag. Melepas pin di posisi baru langsung menimpa nilai Latitude/Longitude baris tersebut, dan otomatis ter-refleksi ke tabel Preview Data serta ke canvas Preview watermark (kalau baris itu sedang jadi contoh yang ditampilkan) — jadi tidak perlu edit CSV manual kalau cuma mau menggeser titik sedikit.
 - **Kalender** di sebelah peta menyorot tanggal mana saja yang punya data (dihitung dari kolom Tanggal tiap baris, terlepas dari valid-tidaknya koordinat), dengan jumlah foto per tanggal. Klik satu tanggal untuk menyorot titik-titik pada tanggal itu di peta (titik lain jadi transparan) dan menampilkan daftar nama filenya; klik lagi (atau tombol "Tampilkan Semua") untuk membatalkan filter.
 - Butuh koneksi internet untuk memuat gambar peta (tile Jalan/Satelit); tanpa internet peta tetap berfungsi untuk drag-koordinat dan kalender, hanya tampilan tile-nya kosong.
 
-### Tab 2 — Tempel ke Foto
-Alih-alih PNG transparan terpisah, overlay langsung "dibakar" ke foto asli kamu. Upload foto (banyak sekaligus / satu folder), foto dipasangkan otomatis dengan baris CSV (dari Tab 1) berdasarkan nama file atau urutan. Mendukung **JPG, PNG, dan HEIC/HEIF** (format foto default iPhone). Ada opsi:
+### Tempel ke Foto
+Alih-alih PNG transparan terpisah, overlay langsung "dibakar" ke foto asli kamu. Upload foto (banyak sekaligus / satu folder), foto dipasangkan otomatis dengan baris CSV (dari menu Watermark GPS) berdasarkan nama file atau urutan. Mendukung **JPG, PNG, dan HEIC/HEIF** (format foto default iPhone). Ada opsi:
 - **Acak koordinat** dalam radius tertentu (1–50 meter) — supaya titik tidak persis sama di setiap foto
 - **Tulis GPS+tanggal ke EXIF** foto JPG hasil (opsional, bisa dimatikan)
 - **Bersihkan metadata lain** — hasil jadi file bersih hanya berisi GPS+tanggal yang kamu tentukan
 - Format output JPG (kompres, EXIF didukung) atau PNG (kualitas penuh, tanpa EXIF) — berlaku untuk foto apa pun yang diupload, termasuk HEIC
 
-### Tab 3 — Geotag Metadata
-Hanya menulis GPS+tanggal ke metadata EXIF foto — **tanpa** overlay/watermark visual apa pun. Untuk foto dokumentasi asli yang GPS-nya tidak terekam kamera. Sumber koordinat bisa manual (satu titik untuk semua foto) atau dari CSV Tab 1 (per foto berurutan). Sama seperti Tab 2, ada opsi acak koordinat dan bersihkan metadata lain. Menerima upload **JPG maupun HEIC**.
+### Geotag Metadata
+Hanya menulis GPS+tanggal ke metadata EXIF foto — **tanpa** overlay/watermark visual apa pun. Untuk foto dokumentasi asli yang GPS-nya tidak terekam kamera. Sumber koordinat bisa manual (satu titik untuk semua foto) atau dari CSV menu Watermark GPS (per foto berurutan). Sama seperti menu Tempel ke Foto, ada opsi acak koordinat dan bersihkan metadata lain. Menerima upload **JPG maupun HEIC**.
 
-**Catatan teknis EXIF:** hanya file JPG yang mendukung EXIF (standar industri) — PNG tidak punya slot EXIF yang sama. HEIC punya struktur metadatanya sendiri yang tidak kompatibel dengan cara Tab 3 menulis EXIF, jadi foto **HEIC otomatis dikonversi ke JPG dulu** (di browser, lihat "Dukungan Format HEIC/HEIF") sebelum ditulisi metadata GPS — hasil downloadnya berformat `.jpg`, bukan `.heic`.
+**Catatan teknis EXIF:** hanya file JPG yang mendukung EXIF (standar industri) — PNG tidak punya slot EXIF yang sama. HEIC punya struktur metadatanya sendiri yang tidak kompatibel dengan cara menu Geotag Metadata menulis EXIF, jadi foto **HEIC otomatis dikonversi ke JPG dulu** (di browser, lihat "Dukungan Format HEIC/HEIF") sebelum ditulisi metadata GPS — hasil downloadnya berformat `.jpg`, bukan `.heic`.
 
-### Metadata Tambahan (opsional) — Tab 3
+### Metadata Tambahan (opsional) — Geotag Metadata
 
-Selain GPS + tanggal/waktu, Tab 3 sekarang punya field opsional yang juga ditulis ke EXIF setiap foto dalam satu batch (nilai sama untuk semua foto pada proses tersebut) — berguna untuk kelengkapan dokumentasi kepatuhan seperti **SIMPEL PPU**:
+Selain GPS + tanggal/waktu, menu Geotag Metadata sekarang punya field opsional yang juga ditulis ke EXIF setiap foto dalam satu batch (nilai sama untuk semua foto pada proses tersebut) — berguna untuk kelengkapan dokumentasi kepatuhan seperti **SIMPEL PPU**:
 
 | Field | Ditulis ke tag EXIF |
 |---|---|
@@ -296,36 +297,36 @@ Selain GPS + tanggal/waktu, Tab 3 sekarang punya field opsional yang juga dituli
 
 Semua field ini opsional — dikosongkan berarti tidak ditulis. Verifikasi hasilnya sama seperti GPS: klik-kanan foto → Properties → Details (Windows), atau lewat situs pengecek EXIF.
 
-### Tab 4 — Buat CSV dari Foto
+### Buat CSV dari Foto
 
-Tool kecil yang **berdiri sendiri**, terpisah dari data/pengaturan Tab 1–3 — tidak berbagi apa pun dengan tab lain. Dibuat untuk kasus foto dokumentasi yang tanggal/jam pemotretannya sudah hilang atau salah, sehingga perlu dikoreksi manual sebelum dipakai sebagai CSV di Tab 1. Menerima file **JPG, PNG, dan HEIC**.
+Tool kecil yang **berdiri sendiri**, terpisah dari data/pengaturan menu lainnya — tidak berbagi apa pun dengan tab lain. Dibuat untuk kasus foto dokumentasi yang tanggal/jam pemotretannya sudah hilang atau salah, sehingga perlu dikoreksi manual sebelum dipakai sebagai CSV di menu Watermark GPS. Menerima file **JPG, PNG, dan HEIC**.
 
 Cara pakai:
 1. Klik **"Atau Pilih Folder Langsung"** untuk memilih seluruh folder foto sekaligus, atau drag & drop / pilih file satu-satu.
 2. Untuk tiap foto, tanggal & jam diambil otomatis:
    - Dari metadata **EXIF** (`DateTimeOriginal`) kalau filenya JPG dan datanya ada — ditandai badge hijau **EXIF**.
    - Kalau tidak ada (bukan JPG, atau EXIF-nya kosong/hilang — termasuk **HEIC**, lihat catatan di bawah), fallback ke **tanggal terakhir file dimodifikasi** di file system — ditandai badge kuning **File System**, karena ini cuma perkiraan, bukan waktu pemotretan asli.
-3. Kalau fotonya JPG dan punya **GPS di EXIF** (umum untuk foto dari aplikasi seperti GPS Map Camera — koordinatnya tetap tersimpan di metadata walau cuma teks watermark yang kelihatan di gambarnya), kolom **Latitude/Longitude otomatis terisi**, dan **Lokasi** otomatis dideteksi dari koordinat itu lewat reverse-geocoding yang sama dengan "Deteksi Otomatis dari Koordinat" di Tab 1 (perlu koneksi internet; kalau gagal/offline, kolom itu dikosongkan seperti biasa).
+3. Kalau fotonya JPG dan punya **GPS di EXIF** (umum untuk foto dari aplikasi seperti GPS Map Camera — koordinatnya tetap tersimpan di metadata walau cuma teks watermark yang kelihatan di gambarnya), kolom **Latitude/Longitude otomatis terisi**, dan **Lokasi** otomatis dideteksi dari koordinat itu lewat reverse-geocoding yang sama dengan "Deteksi Otomatis dari Koordinat" di menu Watermark GPS (perlu koneksi internet; kalau gagal/offline, kolom itu dikosongkan seperti biasa).
 4. Tabel hasil ekstraksi **bisa diedit langsung** — klik kolom Tanggal/Waktu/Latitude/Longitude/Lokasi tiap baris untuk mengoreksi manual, terutama baris bertanda "File System" atau yang GPS/Lokasi-nya masih kosong.
-5. Klik **Download CSV** untuk mengunduh hasilnya — kolom CSV sama persis dengan format Tab 1 (`Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat`). Kolom yang tidak berhasil terisi otomatis (misalnya Alamat, atau semuanya kalau fotonya tidak punya GPS EXIF) dikosongkan untuk diisi manual lewat Excel/Google Sheets.
+5. Klik **Download CSV** untuk mengunduh hasilnya — kolom CSV sama persis dengan format menu Watermark GPS (`Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat`). Kolom yang tidak berhasil terisi otomatis (misalnya Alamat, atau semuanya kalau fotonya tidak punya GPS EXIF) dikosongkan untuk diisi manual lewat Excel/Google Sheets.
 6. Klik **Reset** (di pojok kanan atas kartu "Hasil Ekstraksi") kapan saja untuk mengosongkan tabel & input file, lalu upload file/folder lain — tidak perlu reload halaman.
 
-Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto tidak pernah diunggah ke mana pun. Reverse-geocoding koordinat GPS memang butuh koneksi internet (lewat layanan Esri yang sama dipakai Tab 1), tapi hanya mengirim angka koordinat, bukan fotonya.
+Semua pemrosesan (baca EXIF, baca tanggal file) terjadi 100% di browser — foto tidak pernah diunggah ke mana pun. Reverse-geocoding koordinat GPS memang butuh koneksi internet (lewat layanan Esri yang sama dipakai menu Watermark GPS), tapi hanya mengirim angka koordinat, bukan fotonya.
 
 ## Dukungan Format HEIC/HEIF (Foto iPhone)
 
-iPhone (iOS 11+) menyimpan foto dalam format **HEIC** secara default. Tab 2 dan Tab 3 menanganinya dengan strategi dua lapis:
+iPhone (iOS 11+) menyimpan foto dalam format **HEIC** secara default. Menu Tempel ke Foto dan Geotag Metadata menanganinya dengan strategi dua lapis:
 
 1. **Coba decode native browser dulu** — tercepat (instan), dan ini yang membuat **Safari langsung bisa** karena Safari punya dukungan HEIC bawaan di level OS. Berlaku otomatis, tidak perlu pengaturan apa pun.
 2. **Kalau native gagal** (kasus paling umum: Chrome, Firefox, Edge — belum ada satu pun yang bisa decode HEIC lewat `<img>`/`<canvas>`), otomatis fallback ke [`libheif-js`](https://github.com/catdad-experiments/libheif-js) (LGPL-3.0, dibundel lokal di `libs/libheif/`, tidak pernah fetch dari CDN) — build resmi WebAssembly dari codec [`libheif`](https://github.com/strukturag/libheif) itu sendiri, dipakai langsung (bukan lewat wrapper pihak ketiga) supaya dapat dukungan format HEIC terluas dan performa terbaik yang tersedia untuk decode di browser.
 
 Detail per tab:
-- **Tab 2 (Tempel ke Foto):** foto HEIC didecode (native atau via libheif-js) sebelum watermark digambar, lalu diekspor sesuai Format Output yang dipilih (JPG atau PNG) — sama seperti alur untuk foto JPG/PNG biasa.
-- **Tab 3 (Geotag Metadata):** foto HEIC **selalu** dikonversi lewat libheif-js ke JPEG dulu — walaupun di Safari (karena EXIF adalah konsep khusus struktur file JPEG; kemampuan Safari menampilkan HEIC secara native tidak membantu di sini, bytes aslinya tetap HEIC, bukan JPEG). File yang diunduh berekstensi `.jpg`, bukan `.heic`.
-- **Tab 4 (Buat CSV dari Foto):** **belum** membaca tanggal maupun GPS EXIF asli dari dalam file HEIC (perlu parser struktur HEIF terpisah yang fokus pada metadata, bukan konversi gambar) — foto HEIC otomatis memakai fallback tanggal-file-dimodifikasi (badge "File System") seperti foto non-JPG lainnya, dan kolom Latitude/Longitude/Lokasi-nya tetap kosong. Koreksi manual di tabel kalau datanya berbeda/dibutuhkan.
-- **Tab 1** tidak memproses foto sama sekali (hanya CSV), jadi tidak terpengaruh format foto apa pun.
+- **Tempel ke Foto:** foto HEIC didecode (native atau via libheif-js) sebelum watermark digambar, lalu diekspor sesuai Format Output yang dipilih (JPG atau PNG) — sama seperti alur untuk foto JPG/PNG biasa.
+- **Geotag Metadata:** foto HEIC **selalu** dikonversi lewat libheif-js ke JPEG dulu — walaupun di Safari (karena EXIF adalah konsep khusus struktur file JPEG; kemampuan Safari menampilkan HEIC secara native tidak membantu di sini, bytes aslinya tetap HEIC, bukan JPEG). File yang diunduh berekstensi `.jpg`, bukan `.heic`.
+- **Buat CSV dari Foto:** **belum** membaca tanggal maupun GPS EXIF asli dari dalam file HEIC (perlu parser struktur HEIF terpisah yang fokus pada metadata, bukan konversi gambar) — foto HEIC otomatis memakai fallback tanggal-file-dimodifikasi (badge "File System") seperti foto non-JPG lainnya, dan kolom Latitude/Longitude/Lokasi-nya tetap kosong. Koreksi manual di tabel kalau datanya berbeda/dibutuhkan.
+- menu **Watermark GPS** tidak memproses foto sama sekali (hanya CSV), jadi tidak terpengaruh format foto apa pun.
 
-**Soal kecepatan:** jalur WASM (non-Safari) tetap melibatkan decoding gambar resolusi penuh tanpa akselerasi hardware, jadi ada jeda yang terasa — namun biasanya cuma **beberapa detik per foto** untuk resolusi standar (12 MP), bertambah untuk foto beresolusi sangat tinggi (48 MP). Tab 2/3 menampilkan status "Mengonversi HEIC..." (di preview maupun progress bar) selama proses ini berlangsung, dan langsung terlihat sesaat setelah foto dipilih supaya tidak terkesan aplikasi berhenti merespons. Kalau konversi gagal (file rusak/format tidak didukung), pesan errornya sekarang spesifik menyebutkan tahap mana yang gagal, bukan pesan generik. Untuk banyak foto HEIC sekaligus, total waktunya berakumulasi (foto diproses satu per satu, bukan paralel) — pakai Safari kalau tersedia untuk hasil instan tanpa jeda konversi sama sekali.
+**Soal kecepatan:** jalur WASM (non-Safari) tetap melibatkan decoding gambar resolusi penuh tanpa akselerasi hardware, jadi ada jeda yang terasa — namun biasanya cuma **beberapa detik per foto** untuk resolusi standar (12 MP), bertambah untuk foto beresolusi sangat tinggi (48 MP). Menu Tempel ke Foto & Geotag Metadata menampilkan status "Mengonversi HEIC..." (di preview maupun progress bar) selama proses ini berlangsung, dan langsung terlihat sesaat setelah foto dipilih supaya tidak terkesan aplikasi berhenti merespons. Kalau konversi gagal (file rusak/format tidak didukung), pesan errornya sekarang spesifik menyebutkan tahap mana yang gagal, bukan pesan generik. Untuk banyak foto HEIC sekaligus, total waktunya berakumulasi (foto diproses satu per satu, bukan paralel) — pakai Safari kalau tersedia untuk hasil instan tanpa jeda konversi sama sekali.
 
 ## Kenapa Tool Ini Dibuat
 
@@ -333,4 +334,4 @@ Di beberapa lokasi kerja **restricted** (misalnya area proses/plant pada fasilit
 
 ## Traktir Kopi
 
-Ada tombol "Traktir Kopi" di footer — kalau tool ini bermanfaat, bisa scan QRIS yang muncul di situ. Sepenuhnya opsional. Setelah generate berhasil di Tab 1/2/3, pesan "Selesai!" juga menyertakan ajakan singkat untuk traktir kopi kalau tool-nya membantu pekerjaanmu — tinggal klik teksnya untuk langsung membuka QRIS yang sama.
+Ada tombol "Traktir Kopi" di footer — kalau tool ini bermanfaat, bisa scan QRIS yang muncul di situ. Sepenuhnya opsional. Setelah generate berhasil di menu Watermark GPS, Tempel ke Foto, atau Geotag Metadata, pesan "Selesai!" juga menyertakan ajakan singkat untuk traktir kopi kalau tool-nya membantu pekerjaanmu — tinggal klik teksnya untuk langsung membuka QRIS yang sama.

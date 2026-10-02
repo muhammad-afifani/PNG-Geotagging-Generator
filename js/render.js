@@ -327,13 +327,10 @@ function measureBadgeWidth(ctx, h, logoImg, appLabel, badgeStyle) {
 //            for Apple platforms only); Inter is the closest free match and
 //            fits the real stamp with no spacing adjustment at all
 //            (mean residual ~2px, the JPEG limit).
-//   system — the device's own UI font: real SF Pro when opened on an
-//            iPhone/iPad/Mac, otherwise falls back to Inter.
 //   roboto — Android's font (proportional digits, see
 //            libs/fonts/roboto/README), with the spacing fixes it needs.
 const STAMP_FONTS = {
   inter: { family: '"GeoStamp Inter", Inter, Arial, sans-serif', title: 49.1, body: 31, badge: 28.1, space: 0, digit: 1, punct: 1 },
-  system: { family: '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "GeoStamp Inter", sans-serif', title: 49.1, body: 31, badge: 28.1, space: 0, digit: 1, punct: 1 },
   roboto: { family: '"GeoStamp Roboto", Roboto, Arial, sans-serif', title: 51.2, body: 32.2, badge: 29.8, space: 0.065, digit: 1.04, punct: 0.95 }
 };
 // active profile for the stamp-text helpers below; set at the start of
@@ -426,6 +423,14 @@ function resolveBlockPlacement(p) {
   blockX = Math.max(-blockW * 0.3, Math.min(W - blockW * 0.7, blockX));
   boxY = Math.max(-boxH * 0.3, Math.min(H - boxH * 0.7, boxY));
   return { blockX, boxY };
+}
+
+/**
+ * Remember where the whole stamp (map + box + badge) landed on the
+ * canvas, so the preview can let the user drag/resize it directly.
+ */
+function recordStampBox(canvas, x, w, top, bottom) {
+  canvas.__stampBox = { x, y: top, w, h: bottom - top };
 }
 
 /**
@@ -846,6 +851,7 @@ function renderOverlayClassic(canvas, row, opts) {
   badgeX = Math.max(badgeX, textBoxX + 4 * scale);
   const badgeY = boxY - badgeH;
   const drawBadge = badgeStyle !== 'none' && badgeY >= 0;
+  recordStampBox(canvas, blockX, blockW, Math.min(boxY, opts.showMap ? mapY : boxY, drawBadge ? badgeY : boxY), boxY + boxH);
 
   // ---- optional drop-shadow behind the whole overlay ----
   // Technique: (1) fill solid silhouettes WITH an active shadow, so a
@@ -1290,6 +1296,7 @@ function renderOverlayTemplate2(canvas, row, opts) {
   const badgeX = boxX + boxW - badgeW;
   const badgeY = boxY - badgeH;
   const drawBadge = badgeH > 0 && badgeY >= -badgeH * 0.5;
+  recordStampBox(canvas, blockX, blockW, Math.min(boxY, opts.showMap ? mapY : boxY, drawBadge ? badgeY : boxY), boxY + boxH);
 
   // ---- optional drop shadow (same technique as Template 1) ----
   const shadowStrength = opts.shadowStrength || 0;

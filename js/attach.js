@@ -97,7 +97,7 @@
     el.statRows.textContent = rows.length;
     el.generateBtn.disabled = !(photos().length && rows.length);
     if (!rows.length) {
-      el.previewHint.textContent = 'Data belum ada. Buka Tab 1 dan upload CSV atau isi input manual dulu.';
+      el.previewHint.textContent = 'Data belum ada. Buka menu Watermark GPS lalu isi data dulu (CSV, input manual, atau folder foto).';
     }
   }
   // Tab 1 settings changes re-render this preview the next time the tab
