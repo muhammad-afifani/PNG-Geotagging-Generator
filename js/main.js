@@ -196,11 +196,11 @@
   // ---------- theme ----------
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    el.themeLabel.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    el.themeLabel.textContent = theme === 'dark' ? 'Terang' : 'Gelap';
     saveTheme(theme);
   }
   el.themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(current === 'dark' ? 'light' : 'dark');
   });
   applyTheme(loadTheme());
@@ -275,6 +275,9 @@
     el.mapConeBearing.value = s.mapConeBearing;
     el.mapConeBearingVal.textContent = s.mapConeBearing + '\u00B0';
     updateMapFieldVisibility();
+    // programmatic .value changes fire no input event \u2014 let the UI
+    // (slider fill) resync
+    window.dispatchEvent(new CustomEvent('geostamp:uisync'));
   }
 
   function readSettingsFromUI() {
@@ -786,8 +789,8 @@
       <tr data-index="${i}" class="${i === state.sampleIndex ? 'active' : ''}">
         <td>${i + 1}</td>
         <td class="dp-file">${escapeHtml(row.file)}</td>
-        <td>${isNaN(row.lat) ? '' : row.lat}</td>
-        <td>${isNaN(row.lng) ? '' : row.lng}</td>
+        <td>${isNaN(row.lat) ? '' : Number(row.lat).toFixed(6)}</td>
+        <td>${isNaN(row.lng) ? '' : Number(row.lng).toFixed(6)}</td>
         <td>${escapeHtml(row.date)}</td>
         <td>${escapeHtml(row.time)}</td>
         <td>${escapeHtml(row.location)}</td>

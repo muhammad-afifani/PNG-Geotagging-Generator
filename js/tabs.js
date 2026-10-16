@@ -83,6 +83,36 @@
     });
   }
 
+  // --- range sliders: paint the filled part of the track (CSS reads --p) ---
+  function syncRange(r) {
+    const min = parseFloat(r.min) || 0;
+    const max = parseFloat(r.max) || 100;
+    const p = max > min ? ((parseFloat(r.value) - min) / (max - min)) * 100 : 0;
+    r.style.setProperty('--p', Math.max(0, Math.min(100, p)) + '%');
+  }
+  function syncAllRanges() {
+    document.querySelectorAll('input[type="range"]').forEach(syncRange);
+  }
+  document.addEventListener('input', (e) => {
+    if (e.target.matches && e.target.matches('input[type="range"]')) syncRange(e.target);
+  });
+  window.addEventListener('geostamp:settingschange', syncAllRanges);
+  window.addEventListener('geostamp:uisync', syncAllRanges);
+  syncAllRanges();
+
+  // --- settings groups (<details>): remember which ones are open ---
+  const GROUPS_KEY = 'geostamp_groups_open';
+  let openGroups = null;
+  try { openGroups = JSON.parse(localStorage.getItem(GROUPS_KEY) || 'null'); } catch (e) { /* ignore */ }
+  document.querySelectorAll('details.group[data-group]').forEach((d) => {
+    if (openGroups && typeof openGroups[d.dataset.group] === 'boolean') d.open = openGroups[d.dataset.group];
+    d.addEventListener('toggle', () => {
+      openGroups = openGroups || {};
+      openGroups[d.dataset.group] = d.open;
+      try { localStorage.setItem(GROUPS_KEY, JSON.stringify(openGroups)); } catch (e) { /* ignore */ }
+    });
+  });
+
   // --- generic collapsible card (e.g. Tab 1's "Data Foto" step) ---
   document.querySelectorAll('.card-collapse-btn').forEach((btn) => {
     btn.addEventListener('click', () => {

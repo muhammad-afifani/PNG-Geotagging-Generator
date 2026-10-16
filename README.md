@@ -25,7 +25,7 @@ Aplikasi web 100% client-side (tanpa backend, tanpa server, tanpa Node/PHP/Pytho
 1. **Isi data foto** — dua cara, bisa dipakai gantian atau digabung:
    - **Upload CSV** — drag & drop atau klik untuk memilih file. Belum punya CSV? Klik **"Download Contoh CSV"** yang tersedia di banner panduan (atas halaman) maupun di dalam card Data Foto, isi datamu mengikuti format itu, lalu upload.
    - **Input Manual (satu-satu)** — pilih mode ini kalau cuma mau tes cepat 1–5 foto tanpa bikin file CSV dulu. Isi form (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat, plus field opsional untuk Template 2), klik **"+ Tambah Baris"**, ulangi untuk foto berikutnya. Baris manual ikut ditambahkan ke baris yang sudah ada dari CSV (kalau ada) — dua-duanya bisa digabung.
-   - **Dari Folder Foto (otomatis)** — pilih folder (atau beberapa foto) langsung, tanpa CSV. Tiap foto otomatis jadi satu baris: nama file, tanggal & jam (dari EXIF; kalau tidak ada, dari tanggal file), koordinat GPS (kalau fotonya punya). Untuk foto tanpa GPS (umum untuk kamera di area terbatas), isi Latitude/Longitude sekali lalu klik **"Terapkan ke foto tanpa GPS"**, atau geser pin per foto di peta. Lokasi & alamat dideteksi otomatis dari koordinat. Foto-fotonya langsung terhubung ke menu Tempel ke Foto, dan **preview di kanan menampilkan watermark di atas foto aslinya** — jadi ukuran, posisi, font, dll bisa dipaskan sambil dilihat hasil akhirnya. Setelah pas, klik **"Lanjut: Tempel ke Foto & Download"** di kartu Generate.
+   - **Dari Folder Foto (otomatis)** — pilih folder (atau beberapa foto) langsung, tanpa CSV. Tiap foto otomatis jadi satu baris: nama file, tanggal & jam (dari EXIF; kalau tidak ada, dari tanggal file), koordinat GPS (kalau fotonya punya). Untuk foto tanpa GPS (umum untuk kamera di area terbatas), isi Latitude/Longitude sekali lalu klik **"Terapkan ke foto tanpa GPS"**, atau geser pin per foto di peta. Lokasi & alamat dideteksi otomatis dari koordinat. Foto-fotonya langsung terhubung ke menu Tempel ke Foto, dan **preview di kanan menampilkan watermark di atas foto aslinya** — jadi ukuran, posisi, font, dll bisa dipaskan sambil dilihat hasil akhirnya. Setelah pas, klik **"Lanjut ke Tempel ke Foto"** di kartu Generate.
    - Setelah data masuk (dari cara manapun), cek tabel **Preview Data** yang muncul di bawahnya — semua baris ditampilkan lengkap dengan tombol hapus per baris, dan klik satu baris untuk langsung melihat preview overlay-nya di panel kanan. Ini supaya kamu bisa pastikan data yang dimasukkan sudah benar sebelum generate massal.
 2. **(Opsional) Upload logo** — Mode A pakai logo bawaan (embedded), Mode B upload PNG sendiri.
 3. **Atur pengaturan overlay** — resolusi, format tanggal, posisi, opacity, warna & ukuran font, sumber peta, dll.
@@ -118,6 +118,7 @@ libs/
   libheif/libheif-bundle.js -> decoder HEIC/HEIF resmi libheif berbasis WASM (LGPL-3.0, lihat "Dukungan Format HEIC/HEIF")
   fonts/inter/  -> font Inter (SIL OFL 1.1) — default Template 2, paling mirip SF Pro (font iPhone)
   fonts/roboto/ -> font Roboto (SIL OFL 1.1) — opsi font Android untuk Template 2
+  fonts/plex/   -> font IBM Plex Sans & Mono (SIL OFL 1.1) — hanya untuk tampilan aplikasi, bukan watermark
 assets/
   logo-default.png     -> logo bawaan (Mode A)
   badge-icon.png       -> ikon aplikasi untuk badge Template 2 (ikon + teks "GPS Map Camera")
@@ -200,7 +201,7 @@ Catatan: suhu/angin/ketinggian/arah **tidak dihitung otomatis** oleh tool ini (b
 - Preview satu sample sebelum generate semua (termasuk preview peta asli)
 - Progress bar + estimasi waktu (ETA) saat generate massal
 - Rendering asynchronous & batched dengan **timeout guard di setiap langkah** (fetch peta & encode PNG) — proses tidak akan pernah macet permanen, otomatis fallback dan lanjut jika ada baris bermasalah
-- Dark / Light theme toggle
+- Tampilan bergaya instrumen survei lapangan: tema **Terang** (kertas, default) dan **Gelap**, aksen oranye survei, font IBM Plex (dibundel lokal). Preview watermark besar & menempel (sticky) di kanan selama pengaturan di kiri di-scroll; pengaturan dikelompokkan dalam bagian yang bisa dibuka/tutup (yang terbuka diingat). Responsif sampai layar HP.
 - Simpan pengaturan terakhir otomatis (LocalStorage)
 - Export & import preset sebagai file JSON
 
