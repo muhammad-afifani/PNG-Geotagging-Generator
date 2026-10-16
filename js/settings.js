@@ -122,9 +122,9 @@ function saveSettings(settings) {
 
 function loadTheme() {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+    return localStorage.getItem(THEME_STORAGE_KEY) || 'light';
   } catch (e) {
-    return 'dark';
+    return 'light';
   }
 }
 

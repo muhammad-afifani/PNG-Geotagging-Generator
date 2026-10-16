@@ -3,295 +3,326 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GPS Map Camera — Overlay Generator</title>
+<title>GeoStamp Studio — Watermark &amp; Geotag Foto Lapangan</title>
 <link rel="icon" type="image/png" href="assets/logo-icon.png">
 <link rel="stylesheet" href="libs/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+<!-- icon set (1.5px line, 24 grid) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-mark" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/></symbol>
+    <symbol id="i-stamp" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="5.5" y="12.5" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12.5 13.5h6M12.5 16.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 16.5l5-5 4 4 2.5-2.5 5.5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="16" cy="9" r="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.25" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5v10" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4m0 0L8 8m4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A2 2 0 0 1 5 5.5h4l2 2h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 19.5h15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5v-13z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
 <div class="app">
 
-  <!-- ============ HEADER ============ -->
-  <header class="app-header">
-    <div class="brand">
-      <div class="brand-mark brand-mark-logo">
-        <img src="assets/logo-icon.png" alt="GPS Map Camera">
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg class="brand-mark" width="26" height="26" aria-hidden="true"><use href="#i-mark"/></svg>
+        <div class="brand-text">
+          <h1>GeoStamp<span>Studio</span></h1>
+          <p class="brand-sub">Watermark GPS &amp; geotag untuk foto dokumentasi lapangan</p>
+        </div>
       </div>
-      <div>
-        <h1>GeoStamp Studio</h1>
-        <p class="brand-sub">Internal tool · GPS overlay · photo geotagging · 100% client-side</p>
-      </div>
+
+      <nav class="tabnav" role="tablist" aria-label="Menu">
+        <button class="tab-btn active" data-tab="tab-overlay" role="tab" title="Isi data foto di sini dulu">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-stamp"/></svg>
+          <span class="tab-btn-title">Watermark GPS</span>
+          <span class="tab-btn-sub">Mulai di sini</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-attach" role="tab" title="Pakai data dari Watermark GPS">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-photo"/></svg>
+          <span class="tab-btn-title">Tempel ke Foto</span>
+          <span class="tab-btn-sub">Bakar ke foto asli</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-geotag" role="tab" title="GPS ke EXIF, tanpa watermark">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-tag"/></svg>
+          <span class="tab-btn-title">Geotag Metadata</span>
+          <span class="tab-btn-sub">GPS ke EXIF saja</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-csvbuilder" role="tab" title="Tool terpisah, berdiri sendiri">
+          <svg width="18" height="18" aria-hidden="true"><use href="#i-table"/></svg>
+          <span class="tab-btn-title">Buat CSV dari Foto</span>
+          <span class="tab-btn-sub">Ekstrak EXIF</span>
+        </button>
+      </nav>
+
+      <button class="icon-btn theme-btn" id="themeToggle" type="button" aria-label="Ganti tema terang/gelap">
+        <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span id="themeLabel">Gelap</span>
+      </button>
     </div>
-    <button class="btn btn-ghost" id="themeToggle" type="button" aria-label="Toggle theme">
-      <svg id="themeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/>
-      </svg>
-      <span id="themeLabel">Light</span>
-    </button>
   </header>
 
-  <!-- ============ GUIDE / ONBOARDING BANNER (collapsible) ============ -->
-  <section id="guideBanner" class="guide-banner">
+  <main class="main">
+
+  <!-- ============ GUIDE (collapsible) ============ -->
+  <section id="guideBanner" class="guide">
     <button class="guide-toggle" id="guideToggleBtn" type="button" aria-expanded="true" aria-controls="guideBody">
+      <svg width="18" height="18" aria-hidden="true"><use href="#i-book"/></svg>
       <span class="guide-toggle-text">
-        <strong>Panduan Cara Pakai</strong>
-        <span class="guide-toggle-sub">Alur 4 tab &amp; kenapa tool ini dibuat — klik untuk buka/tutup</span>
+        <strong>Panduan cara pakai</strong>
+        <span class="guide-toggle-sub">Kenapa tool ini dibuat &amp; kegunaan tiap menu</span>
       </span>
-      <svg class="guide-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg class="guide-chevron" width="18" height="18" aria-hidden="true"><use href="#i-chevron"/></svg>
     </button>
 
     <div class="guide-body" id="guideBody">
-      <div class="guide-why">
-        <p><strong>Kenapa tool ini dibuat?</strong> Kamera yang dipakai di area kerja <em>restricted</em> (mis. area proses/plant) umumnya tidak boleh membawa fitur GPS/geotag aktif karena kebijakan keamanan lokasi. Akibatnya foto dokumentasi tidak punya info lokasi. Tool ini menambahkan koordinat &amp; tanggal secara manual ke foto/PNG agar dokumentasi tetap memenuhi <strong>ketentuan teknis SIMPEL PPU</strong> (wajib ada bukti geotag).</p>
+      <p class="guide-why">Kamera di area kerja <em>restricted</em> (area proses/plant) umumnya tidak boleh merekam GPS, jadi foto dokumentasi tidak punya info lokasi. Tool ini menambahkan koordinat &amp; tanggal ke foto agar tetap memenuhi <strong>ketentuan teknis SIMPEL PPU</strong> (wajib ada bukti geotag). Semua proses berjalan di browser — tidak ada foto yang diunggah ke server.</p>
+      <div class="guide-grid">
+        <div class="guide-item">
+          <svg width="20" height="20" aria-hidden="true"><use href="#i-stamp"/></svg>
+          <h3>Watermark GPS</h3>
+          <p>Titik mulai. Isi data lewat CSV, input manual, atau langsung <strong>dari folder foto</strong>. Atur tampilan sambil melihat preview di atas foto aslinya. Data &amp; pengaturan di sini dipakai menu lain.</p>
+        </div>
+        <div class="guide-item">
+          <svg width="20" height="20" aria-hidden="true"><use href="#i-photo"/></svg>
+          <h3>Tempel ke Foto</h3>
+          <p>Watermark "dibakar" menyatu ke foto asli. Foto dipasangkan dengan data berdasarkan nama file atau urutan.</p>
+        </div>
+        <div class="guide-item">
+          <svg width="20" height="20" aria-hidden="true"><use href="#i-tag"/></svg>
+          <h3>Geotag Metadata</h3>
+          <p>Hanya menulis GPS + tanggal ke EXIF. Foto tetap bersih tanpa watermark, tapi propertinya berisi lokasi.</p>
+        </div>
+        <div class="guide-item">
+          <svg width="20" height="20" aria-hidden="true"><use href="#i-table"/></svg>
+          <h3>Buat CSV dari Foto</h3>
+          <p>Ekstrak nama file, tanggal/jam, dan GPS dari EXIF ke tabel yang bisa dikoreksi — unduh sebagai CSV atau lanjutkan langsung.</p>
+        </div>
       </div>
-
-      <div class="guide-flow">
-        <p class="guide-flow-title">Kegunaan tiap tab (baca ini dulu sebelum mulai):</p>
-        <ol class="guide-steps">
-          <li><strong>Watermark GPS.</strong> Titik mulai semua kerja. Upload CSV berisi data foto (nama file, koordinat, tanggal, lokasi), pakai mode Input Manual satu-satu, atau paling praktis: <strong>Dari Folder Foto</strong> — pilih folder foto, datanya dibuat otomatis dan preview watermark langsung tampil di atas foto aslinya. Di sini juga kamu atur tampilan watermark (template, warna, ukuran, logo, dll), cek datanya di tabel Preview Data serta peta &amp; kalender di bawahnya, lalu generate untuk mendapat file PNG watermark transparan (satu per foto, dikumpulkan jadi satu ZIP). <u>Data, logo, dan semua pengaturan yang kamu atur di sini otomatis dipakai juga oleh menu Tempel ke Foto &amp; Geotag Metadata</u> — tidak perlu upload/isi ulang.</li>
-          <li><strong>Tempel ke Foto.</strong> Dipakai kalau kamu mau watermark langsung "dibakar" menyatu ke foto asli kamu (bukan file PNG terpisah). Upload foto-foto aslinya di sini; datanya (koordinat, tanggal, dst) diambil otomatis dari yang sudah diisi di menu Watermark GPS, dipasangkan per foto berdasarkan nama file atau urutan.</li>
-          <li><strong>Geotag Metadata.</strong> Dipakai kalau kamu hanya butuh menulis GPS + tanggal ke metadata EXIF (bukan watermark yang kelihatan di foto) — hasilnya foto tetap terlihat asli/bersih, tapi kalau dicek propertinya sudah ada info lokasi &amp; tanggalnya.</li>
-          <li><strong>Buat CSV dari Foto.</strong> Tool kecil yang berdiri sendiri, terpisah dari menu lainnya. Berguna kalau foto kamu tanggal/jam pemotretannya sudah hilang atau salah: pilih folder foto, tool ini ekstrak nama file + tanggal/jam (dari EXIF kalau ada, atau dari file) + koordinat GPS &amp; lokasi (kalau ada di EXIF-nya) ke tabel yang bisa dikoreksi manual, lalu diunduh sebagai CSV siap dipakai di menu Watermark GPS (atau langsung dilanjutkan ke sana dengan tombol "Lanjut"). Ada tombol Reset untuk mulai ulang dengan file/folder lain.</li>
-        </ol>
-        <p class="guide-note">Belum punya file CSV? Download contoh formatnya, isi datamu, lalu upload di menu Watermark GPS. Atau pilih "Dari Folder Foto" di sana untuk langsung membuat data dari foto-fotomu.</p>
-        <a class="btn btn-secondary guide-download" href="contoh-format.csv" download="contoh-format.csv">Download Contoh CSV</a>
+      <div class="guide-foot">
+        <span>Belum punya CSV? Unduh contoh formatnya, atau pakai "Dari Folder Foto".</span>
+        <a class="btn btn-secondary btn-sm guide-download" href="contoh-format.csv" download="contoh-format.csv">
+          <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>Contoh CSV
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- ============ TAB NAV ============ -->
-  <nav class="tabnav" role="tablist">
-    <button class="tab-btn active" data-tab="tab-overlay" role="tab">
-      <span class="tab-btn-title">Watermark GPS</span>
-      <span class="tab-btn-sub">Isi data foto di sini dulu</span>
-    </button>
-    <button class="tab-btn" data-tab="tab-attach" role="tab">
-      <span class="tab-btn-title">Tempel ke Foto</span>
-      <span class="tab-btn-sub">Pakai data dari Watermark GPS</span>
-    </button>
-    <button class="tab-btn" data-tab="tab-geotag" role="tab">
-      <span class="tab-btn-title">Geotag Metadata</span>
-      <span class="tab-btn-sub">GPS ke EXIF, tanpa watermark</span>
-    </button>
-    <button class="tab-btn" data-tab="tab-csvbuilder" role="tab">
-      <span class="tab-btn-title">Buat CSV dari Foto</span>
-      <span class="tab-btn-sub">Tool terpisah, berdiri sendiri</span>
-    </button>
-  </nav>
-
-  <!-- ============ TAB 1 : OVERLAY PNG (existing feature) ============ -->
+  <!-- ============ WATERMARK GPS ============ -->
   <div id="tab-overlay" class="tab-panel active">
 
-  <!-- STEP 1 : DATA (CSV or manual) — full width, up top so it (and the
-       map/calendar right after it) are visible without scrolling past
-       the whole settings panel below -->
   <section class="card collapsible-card" id="dataFotoCard">
-        <div class="card-head">
-          <span class="step-badge">1</span>
-          <h2>Data Foto</h2>
-          <span class="preview-tag hidden" id="dataFotoSummary"></span>
-          <button class="card-collapse-btn" id="dataFotoToggleBtn" type="button" aria-expanded="true" aria-controls="dataFotoBody" aria-label="Buka/tutup Data Foto">
-            <svg class="card-collapse-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
+    <div class="card-head">
+      <h2>Data foto</h2>
+      <span class="tag hidden" id="dataFotoSummary"></span>
+      <button class="card-collapse-btn" id="dataFotoToggleBtn" type="button" aria-expanded="true" aria-controls="dataFotoBody" aria-label="Buka/tutup Data Foto">
+        <svg class="card-collapse-chevron" width="18" height="18" aria-hidden="true"><use href="#i-chevron"/></svg>
+      </button>
+    </div>
 
-        <div class="collapsible-card-body" id="dataFotoBody">
+    <div class="collapsible-card-body" id="dataFotoBody">
 
-        <div class="mode-toggle">
-          <label class="radio-pill">
-            <input type="radio" name="dataInputMode" value="csv" checked>
-            <span>Upload CSV</span>
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="dataInputMode" value="manual">
-            <span>Input Manual (satu-satu)</span>
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="dataInputMode" value="folder">
-            <span>Dari Folder Foto (otomatis)</span>
-          </label>
-        </div>
+      <div class="segmented mode-toggle" role="radiogroup" aria-label="Sumber data">
+        <label class="radio-pill">
+          <input type="radio" name="dataInputMode" value="csv" checked>
+          <span>Upload CSV</span>
+        </label>
+        <label class="radio-pill">
+          <input type="radio" name="dataInputMode" value="manual">
+          <span>Input manual</span>
+        </label>
+        <label class="radio-pill">
+          <input type="radio" name="dataInputMode" value="folder">
+          <span>Dari folder foto</span>
+        </label>
+      </div>
 
-        <div id="folderModePanel" class="hidden">
-          <div class="csv-upload-row">
-            <div class="csv-upload-left">
-              <div id="folderDropZone" class="dropzone">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                </svg>
-                <p><strong>Drag &amp; drop foto</strong> di sini, atau klik untuk memilih foto</p>
-                <input type="file" id="folderPhotoInput" accept="image/*,.heic,.heif" multiple hidden>
-              </div>
-              <label class="btn btn-secondary btn-block btn-file" style="margin-top:10px;">
-                Pilih Folder Foto
-                <input type="file" id="folderDirInput" webkitdirectory multiple hidden>
-              </label>
-              <div id="folderInfo" class="file-info hidden"></div>
+      <div id="folderModePanel" class="hidden">
+        <div class="split">
+          <div>
+            <div id="folderDropZone" class="dropzone">
+              <svg width="26" height="26" aria-hidden="true"><use href="#i-photo"/></svg>
+              <p><strong>Tarik &amp; lepas foto</strong> di sini, atau klik untuk memilih</p>
+              <span class="dropzone-meta">JPG · PNG · HEIC</span>
+              <input type="file" id="folderPhotoInput" accept="image/*,.heic,.heif" multiple hidden>
             </div>
-            <div class="csv-upload-right">
-              <p class="hint" style="margin-top:0;">Pilih folder berisi foto — data tiap foto langsung dibuat otomatis tanpa CSV: <strong>nama file</strong>, <strong>tanggal &amp; jam</strong> (dari EXIF, atau tanggal file kalau tidak ada), dan <strong>koordinat GPS</strong> kalau fotonya punya. Lokasi &amp; alamat dideteksi otomatis dari koordinat. Preview di kanan langsung menampilkan watermark <strong>di atas foto aslinya</strong>, jadi ukuran/posisi bisa dipaskan sambil dilihat.</p>
-              <div class="field-row" style="margin-top:10px;">
-                <div class="field">
-                  <label for="folderDefaultLat">Latitude untuk foto tanpa GPS</label>
-                  <input type="text" id="folderDefaultLat" placeholder="-0.855322">
-                </div>
-                <div class="field">
-                  <label for="folderDefaultLng">Longitude untuk foto tanpa GPS</label>
-                  <input type="text" id="folderDefaultLng" placeholder="117.265612">
-                </div>
+            <label class="btn btn-secondary btn-block btn-file">
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-folder"/></svg>
+              Pilih folder foto
+              <input type="file" id="folderDirInput" webkitdirectory multiple hidden>
+            </label>
+            <div id="folderInfo" class="file-info hidden"></div>
+          </div>
+          <div class="split-aside">
+            <p class="hint">Tiap foto langsung jadi satu baris data: <strong>nama file</strong>, <strong>tanggal &amp; jam</strong> (dari EXIF, atau tanggal file), dan <strong>GPS</strong> kalau ada. Lokasi &amp; alamat dideteksi otomatis, dan preview langsung tampil di atas foto aslinya.</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="folderDefaultLat">Latitude foto tanpa GPS</label>
+                <input type="text" id="folderDefaultLat" class="mono" placeholder="-0.855322" inputmode="decimal">
               </div>
-              <button class="btn btn-secondary btn-tiny" id="folderApplyCoordsBtn" type="button" style="margin-top:8px;">Terapkan ke foto tanpa GPS</button>
-              <p class="hint">Foto dari kamera di area terbatas biasanya tidak punya GPS — isi koordinat lokasinya di sini sekali untuk semua foto itu (atau geser pin-nya per foto di peta "Peta &amp; Kalender Data").</p>
+              <div class="field">
+                <label for="folderDefaultLng">Longitude foto tanpa GPS</label>
+                <input type="text" id="folderDefaultLng" class="mono" placeholder="117.265612" inputmode="decimal">
+              </div>
             </div>
+            <button class="btn btn-secondary btn-sm" id="folderApplyCoordsBtn" type="button">Terapkan ke foto tanpa GPS</button>
+            <p class="hint">Atau geser pin per foto di peta di bawah.</p>
           </div>
         </div>
+      </div>
 
-        <div id="csvModePanel">
-          <div class="csv-upload-row">
-            <div class="csv-upload-left">
-              <div id="dropZone" class="dropzone">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <p><strong>Drag &amp; drop CSV</strong> di sini, atau klik untuk memilih file</p>
-                <input type="file" id="csvInput" accept=".csv" hidden>
-              </div>
-              <div id="csvInfo" class="file-info hidden"></div>
-              <p class="hint">Kolom yang dikenali otomatis: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat (nama header fleksibel / boleh Bahasa Indonesia atau Inggris).</p>
-              <a class="btn btn-secondary btn-tiny csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">Download Contoh Format CSV</a>
+      <div id="csvModePanel">
+        <div class="split">
+          <div>
+            <div id="dropZone" class="dropzone">
+              <svg width="26" height="26" aria-hidden="true"><use href="#i-upload"/></svg>
+              <p><strong>Tarik &amp; lepas CSV</strong> di sini, atau klik untuk memilih</p>
+              <span class="dropzone-meta">.csv</span>
+              <input type="file" id="csvInput" accept=".csv" hidden>
             </div>
-            <div class="csv-upload-right">
-              <div id="csvColMap" class="colmap hidden"></div>
-              <p class="hint" id="csvColMapPlaceholder">Info kolom yang terdeteksi dari CSV kamu akan tampil di sini setelah file diupload.</p>
+            <div id="csvInfo" class="file-info hidden"></div>
+            <div class="inline-actions">
+              <span class="hint">Header fleksibel: nama file, latitude, longitude, tanggal, waktu, lokasi, alamat.</span>
+              <a class="btn btn-ghost btn-sm csv-template-btn" href="contoh-format.csv" download="contoh-format.csv">
+                <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>Contoh format
+              </a>
             </div>
           </div>
+          <div class="split-aside">
+            <div id="csvColMap" class="colmap hidden"></div>
+            <p class="hint empty-note" id="csvColMapPlaceholder">Kolom yang terdeteksi dari CSV-mu akan tampil di sini.</p>
+          </div>
         </div>
+      </div>
 
-        <div id="manualModePanel" class="hidden">
-          <p class="hint" style="margin-top:0;">Cocok untuk tes cepat 1–5 foto tanpa perlu bikin file CSV. Isi form, klik "Tambah Baris", ulangi untuk foto berikutnya — semuanya masuk ke daftar Preview Data di bawah.</p>
-          <div class="manual-fields">
+      <div id="manualModePanel" class="hidden">
+        <p class="hint">Untuk tes cepat beberapa foto tanpa CSV. Isi, klik "Tambah baris", ulangi.</p>
+        <div class="manual-fields">
+          <div class="field">
+            <label for="manualFile">Nama file</label>
+            <input type="text" id="manualFile" placeholder="IMG_0001">
+          </div>
+          <div class="field-row">
             <div class="field">
-              <label for="manualFile">Nama File</label>
-              <input type="text" id="manualFile" placeholder="IMG_0001">
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="manualLat">Latitude</label>
-                <input type="text" id="manualLat" placeholder="-0.664651">
-              </div>
-              <div class="field">
-                <label for="manualLng">Longitude</label>
-                <input type="text" id="manualLng" placeholder="117.264083">
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="manualDate">Tanggal</label>
-                <input type="date" id="manualDate">
-              </div>
-              <div class="field">
-                <label for="manualTime">Waktu</label>
-                <input type="time" id="manualTime">
-              </div>
+              <label for="manualLat">Latitude</label>
+              <input type="text" id="manualLat" class="mono" placeholder="-0.664651" inputmode="decimal">
             </div>
             <div class="field">
-              <label for="manualLocation">Lokasi / Project Name</label>
-              <input type="text" id="manualLocation" placeholder="Kutai Kartanegara Kalimantan Timur">
+              <label for="manualLng">Longitude</label>
+              <input type="text" id="manualLng" class="mono" placeholder="117.264083" inputmode="decimal">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="manualDate">Tanggal</label>
+              <input type="date" id="manualDate">
             </div>
             <div class="field">
-              <label for="manualAddress">Alamat</label>
-              <input type="text" id="manualAddress" placeholder="Jl. Contoh No.1, Kecamatan, Kota">
-            </div>
-
-            <div class="settings-subhead" style="grid-column:1/-1;">Field Tambahan (opsional, untuk Template 2)</div>
-            <div class="field-row">
-              <div class="field">
-                <label for="manualNote">Catatan</label>
-                <input type="text" id="manualNote" placeholder="Kosongkan jika tidak perlu">
-              </div>
-              <div class="field">
-                <label for="manualPhone">Kontak</label>
-                <input type="text" id="manualPhone" placeholder="+62 812-...">
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="manualTemperature">Suhu</label>
-                <input type="text" id="manualTemperature" placeholder="21 C">
-              </div>
-              <div class="field">
-                <label for="manualWind">Angin</label>
-                <input type="text" id="manualWind" placeholder="25 km/h">
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="manualAltitude">Ketinggian</label>
-                <input type="text" id="manualAltitude" placeholder="22 m">
-              </div>
-              <div class="field">
-                <label for="manualDirection">Arah</label>
-                <input type="text" id="manualDirection" placeholder="165 S">
-              </div>
+              <label for="manualTime">Waktu</label>
+              <input type="time" id="manualTime">
             </div>
           </div>
-          <button class="btn btn-primary btn-block" id="addManualRowBtn" type="button" style="margin-top:14px;">+ Tambah Baris</button>
-        </div>
-
-        <div id="dataPreviewSection" class="data-preview hidden">
-          <div class="data-preview-head">
-            <h3>Preview Data <span id="dataPreviewCount" class="preview-tag"></span></h3>
-            <button class="btn btn-tiny" id="clearRowsBtn" type="button">Kosongkan Semua</button>
+          <div class="field">
+            <label for="manualLocation">Lokasi / project name</label>
+            <input type="text" id="manualLocation" placeholder="Kutai Kartanegara Kalimantan Timur">
           </div>
-          <p class="hint" style="margin-top:0;">Klik satu baris untuk lihat preview overlay-nya di panel kanan. Cek dulu datanya benar sebelum generate.</p>
-          <div class="data-preview-table-wrap">
-            <table class="data-preview-table">
-              <thead>
-                <tr>
-                  <th>#</th><th>Nama File</th><th>Lat</th><th>Long</th><th>Tanggal</th><th>Waktu</th><th>Lokasi</th><th>Alamat</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="dataPreviewBody"></tbody>
-            </table>
+          <div class="field">
+            <label for="manualAddress">Alamat</label>
+            <input type="text" id="manualAddress" placeholder="Jl. Contoh No.1, Kecamatan, Kota">
+          </div>
+
+          <div class="subhead">Opsional — baris tambahan Template 2</div>
+          <div class="field-row">
+            <div class="field">
+              <label for="manualNote">Catatan</label>
+              <input type="text" id="manualNote" placeholder="Kosongkan jika tidak perlu">
+            </div>
+            <div class="field">
+              <label for="manualPhone">Kontak</label>
+              <input type="text" id="manualPhone" placeholder="+62 812-…">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="manualTemperature">Suhu</label>
+              <input type="text" id="manualTemperature" placeholder="21 C">
+            </div>
+            <div class="field">
+              <label for="manualWind">Angin</label>
+              <input type="text" id="manualWind" placeholder="25 km/h">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="manualAltitude">Ketinggian</label>
+              <input type="text" id="manualAltitude" placeholder="22 m">
+            </div>
+            <div class="field">
+              <label for="manualDirection">Arah</label>
+              <input type="text" id="manualDirection" placeholder="165 S">
+            </div>
           </div>
         </div>
+        <button class="btn btn-primary" id="addManualRowBtn" type="button">+ Tambah baris</button>
+      </div>
 
-        </div><!-- /.collapsible-card-body #dataFotoBody -->
+      <div id="dataPreviewSection" class="data-preview hidden">
+        <div class="data-preview-head">
+          <h3>Data <span id="dataPreviewCount" class="tag"></span></h3>
+          <span class="hint">Klik baris untuk melihat preview-nya.</span>
+          <button class="btn btn-ghost btn-sm" id="clearRowsBtn" type="button">Kosongkan</button>
+        </div>
+        <div class="data-preview-table-wrap">
+          <table class="data-preview-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Nama file</th><th>Lat</th><th>Long</th><th>Tanggal</th><th>Waktu</th><th>Lokasi</th><th>Alamat</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="dataPreviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /#dataFotoBody -->
   </section>
 
   <section class="card collapsible-card map-calendar-card" id="mapCalendarCard">
     <div class="card-head">
-      <h2>Peta &amp; Kalender Data</h2>
-      <span class="preview-tag" id="mcCount"></span>
-      <button class="card-collapse-btn" id="mcToggleBtn" type="button" aria-expanded="true" aria-controls="mcBody" aria-label="Buka/tutup Peta &amp; Kalender Data">
-        <svg class="card-collapse-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <h2>Peta &amp; kalender</h2>
+      <span class="tag" id="mcCount"></span>
+      <span class="card-head-note">Geser pin untuk mengoreksi koordinat · klik tanggal untuk menyorot titiknya</span>
+      <button class="card-collapse-btn" id="mcToggleBtn" type="button" aria-expanded="true" aria-controls="mcBody" aria-label="Buka/tutup Peta &amp; Kalender">
+        <svg class="card-collapse-chevron" width="18" height="18" aria-hidden="true"><use href="#i-chevron"/></svg>
       </button>
     </div>
     <div class="collapsible-card-body" id="mcBody">
-      <p class="hint" style="margin-top:0;">Semua titik yang sudah kamu import (dari CSV maupun Input Manual) muncul di peta ini — pilih tampilan Jalan/Satelit lewat kontrol di pojok kanan-atas peta. <strong>Geser pin</strong> untuk mengoreksi koordinat suatu baris — datanya (dan watermark-nya) otomatis menyesuaikan. Kalender di sebelahnya menunjukkan tanggal mana saja yang sudah ada datanya — klik satu tanggal untuk menyorot titik-titiknya di peta.</p>
       <div class="map-calendar-layout">
         <div class="mc-map-wrap">
           <div id="mcMap" class="mc-map"></div>
           <div id="mcMapEmpty" class="mc-map-empty">
-            <p>Belum ada data untuk ditampilkan. Upload CSV atau tambah baris manual dulu di atas.</p>
+            <p>Belum ada titik. Isi data foto dulu di atas.</p>
           </div>
         </div>
         <div class="mc-calendar-wrap">
-          <div id="mcCalendarEmpty" class="mc-calendar-empty">Belum ada tanggal untuk ditampilkan.</div>
+          <div id="mcCalendarEmpty" class="mc-calendar-empty">Belum ada tanggal.</div>
           <div id="mcCalendarMonths"></div>
           <div id="mcFilterInfo" class="mc-filter-info hidden">
             <div class="mc-filter-head">
               <span id="mcFilterLabel"></span>
-              <button type="button" class="btn btn-tiny" id="mcFilterClearBtn">× Tampilkan Semua</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="mcFilterClearBtn">Tampilkan semua</button>
             </div>
             <p id="mcFilterList" class="mc-filter-list"></p>
           </div>
@@ -300,594 +331,584 @@
     </div>
   </section>
 
-  <div class="layout">
+  <div class="workspace">
 
-    <!-- ============ LEFT COLUMN : APPEARANCE SETTINGS ============ -->
+    <!-- ============ SETTINGS ============ -->
     <div class="col col-left">
-
-      <!-- STEP 2 : LOGO -->
-      <section class="card">
+      <section class="card settings-card">
         <div class="card-head">
-          <span class="step-badge">2</span>
-          <h2>Logo Aplikasi <span class="optional">(opsional)</span></h2>
-        </div>
-        <div class="logo-modes">
-          <label class="radio-pill">
-            <input type="radio" name="logoMode" value="default" checked>
-            <span>Mode A — Bawaan (embedded)</span>
-          </label>
-          <label class="radio-pill">
-            <input type="radio" name="logoMode" value="upload">
-            <span>Mode B — Upload PNG</span>
-          </label>
-        </div>
-        <div id="logoUploadZone" class="dropzone dropzone-sm hidden">
-          <p><strong>Klik / drop logo PNG</strong> (transparan disarankan)</p>
-          <input type="file" id="logoInput" accept=".png,image/png" hidden>
-        </div>
-        <div class="logo-preview-row">
-          <div class="logo-preview-box">
-            <img id="logoPreview" alt="Logo preview">
-          </div>
-          <div class="logo-preview-text">
-            <p id="logoStatus">Menggunakan logo bawaan.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- STEP 3 : SETTINGS -->
-      <section class="card">
-        <div class="card-head">
-          <span class="step-badge">3</span>
-          <h2>Pengaturan Overlay</h2>
-          <button class="btn btn-tiny" id="resetSettingsBtn" type="button">Reset</button>
+          <h2>Pengaturan watermark</h2>
+          <button class="btn btn-ghost btn-sm" id="resetSettingsBtn" type="button">Reset semua</button>
         </div>
 
-        <div class="settings-grid">
-
-          <div class="settings-subhead">Preset Template</div>
-
-          <div class="field" style="grid-column: 1 / -1;">
-            <label for="overlayTemplate">Pilih Template Watermark</label>
+        <div class="settings-lead">
+          <div class="field">
+            <label for="overlayTemplate">Template</label>
             <select id="overlayTemplate">
               <option value="classic" selected>Template 1 — Klasik (kartu mengambang)</option>
-              <option value="gpscam2">Template 2 — GPS Map Camera (persis seperti aplikasi asli)</option>
+              <option value="gpscam2">Template 2 — GPS Map Camera (seperti aplikasi asli)</option>
             </select>
           </div>
-
-          <div class="field exact-preset-field" style="grid-column: 1 / -1;">
-            <button class="btn btn-primary btn-block" id="exactPresetBtn" type="button">Samakan Persis dengan Contoh GPS Map Camera</button>
-            <p class="hint" style="margin-top:6px;">Satu klik: Template 2 + semua ukuran, font (Roboto), warna, posisi, peta satelit, pin, kerucut arah, label "Google", bendera, dan format teks diatur sama persis dengan foto asli GPS Map Camera (diukur per piksel). Setelah itu tetap bisa kamu atur ulang sesukanya.</p>
+          <div class="exact-preset-field">
+            <button class="btn btn-accent btn-block" id="exactPresetBtn" type="button">
+              <svg width="18" height="18" aria-hidden="true"><use href="#i-target"/></svg>
+              Samakan persis dengan GPS Map Camera
+            </button>
+            <p class="hint">Template 2 + ukuran, font, warna, peta, pin, arah kamera, logo Google, bendera &amp; format teks — semuanya diukur per piksel dari foto asli. Tetap bisa diubah setelahnya.</p>
           </div>
+        </div>
 
-          <div id="template2Fields" class="template2-fields hidden">
-            <div class="field">
-              <label for="gmtOffset">Zona Waktu (GMT Offset)</label>
-              <select id="gmtOffset">
-                <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
-                <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
-                <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
-                <option value="+00:00">GMT+00:00</option>
-                <option value="+01:00">GMT+01:00</option>
-                <option value="+02:00">GMT+02:00</option>
-                <option value="+03:00">GMT+03:00</option>
-                <option value="+04:00">GMT+04:00</option>
-                <option value="+05:00">GMT+05:00</option>
-                <option value="+05:30">GMT+05:30</option>
-                <option value="+06:00">GMT+06:00</option>
-                <option value="+09:30">GMT+09:30</option>
-                <option value="+10:00">GMT+10:00</option>
-                <option value="+11:00">GMT+11:00</option>
-                <option value="+12:00">GMT+12:00</option>
-                <option value="-05:00">GMT-05:00</option>
-                <option value="-08:00">GMT-08:00</option>
-              </select>
-            </div>
-            <div class="field-row">
+        <!-- Template 2 options -->
+        <div id="template2Fields" class="template2-fields hidden">
+          <details class="group" open data-group="t2">
+            <summary><span>Format teks</span><span class="group-meta">Template 2</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+            <div class="group-body">
               <div class="field">
-                <label for="watermarkLang">Bahasa Nama Hari</label>
-                <select id="watermarkLang">
-                  <option value="en" selected>English (Thursday)</option>
-                  <option value="id">Indonesia (Kamis)</option>
+                <label for="stampFont">Font</label>
+                <select id="stampFont">
+                  <option value="inter" selected>Seperti foto dari iPhone (disarankan)</option>
+                  <option value="roboto">Seperti foto dari Android</option>
                 </select>
               </div>
               <div class="field">
-                <label for="latLngFormat">Format Koordinat</label>
+                <label for="gmtOffset">Zona waktu</label>
+                <select id="gmtOffset">
+                  <option value="+07:00">WIB — GMT+07:00 (Jakarta, Sumatera, Jawa)</option>
+                  <option value="+08:00" selected>WITA — GMT+08:00 (Kalimantan, Sulawesi, Bali)</option>
+                  <option value="+09:00">WIT — GMT+09:00 (Maluku, Papua)</option>
+                  <option value="+00:00">GMT+00:00</option>
+                  <option value="+01:00">GMT+01:00</option>
+                  <option value="+02:00">GMT+02:00</option>
+                  <option value="+03:00">GMT+03:00</option>
+                  <option value="+04:00">GMT+04:00</option>
+                  <option value="+05:00">GMT+05:00</option>
+                  <option value="+05:30">GMT+05:30</option>
+                  <option value="+06:00">GMT+06:00</option>
+                  <option value="+09:30">GMT+09:30</option>
+                  <option value="+10:00">GMT+10:00</option>
+                  <option value="+11:00">GMT+11:00</option>
+                  <option value="+12:00">GMT+12:00</option>
+                  <option value="-05:00">GMT-05:00</option>
+                  <option value="-08:00">GMT-08:00</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="watermarkLang">Nama hari</label>
+                  <select id="watermarkLang">
+                    <option value="en" selected>English (Thursday)</option>
+                    <option value="id">Indonesia (Kamis)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="timeFormat">Format jam</label>
+                  <select id="timeFormat">
+                    <option value="12h0" selected>03:24 PM</option>
+                    <option value="12h">3:24 PM</option>
+                    <option value="24h">15:24</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="latLngFormat">Format koordinat</label>
                 <select id="latLngFormat">
                   <option value="deg" selected>Lat -0.855322° Long 117.265612°</option>
                   <option value="plain">Lat -0.855322 Long 117.265612</option>
                   <option value="dir">0.855322 LS 117.265612 BT</option>
                 </select>
               </div>
-            </div>
-            <div class="field">
-              <label for="stampFont">Font Watermark</label>
-              <select id="stampFont">
-                <option value="inter" selected>Seperti foto dari iPhone (disarankan)</option>
-                <option value="roboto">Seperti foto dari Android</option>
-              </select>
-            </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="timeFormat">Format Jam</label>
-                <select id="timeFormat">
-                  <option value="12h0" selected>03:24 PM</option>
-                  <option value="12h">3:24 PM</option>
-                  <option value="24h">15:24</option>
-                </select>
-              </div>
-              <div class="field field-check" style="justify-content:flex-end;">
-                <label class="checkbox-row">
-                  <input type="checkbox" id="showTime">
-                  <span>Tampilkan jam di baris tanggal</span>
-                </label>
-              </div>
-            </div>
-            <p class="hint" style="margin-top:0;">Judul (kota, provinsi, negara + bendera) memakai hasil deteksi otomatis dari koordinat kalau diaktifkan di bagian "Deteksi Otomatis dari Koordinat" di bawah. Ukuran, rasio, label &amp; arah peta diatur di bagian "Peta &amp; Lokasi".</p>
-
-            <div class="field-row">
-              <div class="field">
-                <label for="noteOverride">Catatan / Note (opsional, semua baris)</label>
-                <input type="text" id="noteOverride" placeholder="Kosongkan untuk pakai kolom Catatan dari CSV">
-              </div>
-              <div class="field">
-                <label for="contactOverride">Nomor Kontak (opsional, semua baris)</label>
-                <input type="text" id="contactOverride" placeholder="Kosongkan untuk pakai kolom Kontak dari CSV">
-              </div>
-            </div>
-            <p class="hint" style="margin-top:0;">Baris Catatan, Kontak, dan info geografis (suhu/angin/ketinggian/arah) sepenuhnya opsional — hanya muncul kalau ada isinya (lewat kolom CSV: <code>catatan</code>, <code>kontak</code>/<code>telepon</code>, <code>suhu</code>, <code>angin</code>, <code>ketinggian</code>, <code>arah</code>) atau lewat kolom Catatan/Kontak di atas. Data cuaca &amp; ketinggian tidak dihitung otomatis oleh tool ini — isi dari CSV kalau kamu punya datanya.</p>
-          </div>
-
-          <div class="settings-subhead">Ukuran &amp; Tanggal</div>
-
-          <div class="field">
-            <label for="canvasSize">Resolusi PNG</label>
-            <select id="canvasSize">
-              <option value="1080x608">1080 × 608 (16:9)</option>
-              <option value="1080x500" selected>1080 × 500 (standar GPS Map Camera)</option>
-              <option value="1920x1080">1920 × 1080 (Full HD)</option>
-              <option value="1080x1350">1080 × 1350 (potret)</option>
-              <option value="custom">Kustom…</option>
-            </select>
-            <div id="customSizeRow" class="field-row hidden">
-              <input type="number" id="customW" placeholder="Width" min="200" max="4000">
-              <span>×</span>
-              <input type="number" id="customH" placeholder="Height" min="150" max="4000">
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="dateFormat">Format Tanggal</label>
-            <select id="dateFormat">
-              <option value="short">Wednesday, 08/13/2025</option>
-              <option value="long">Wednesday, August 13, 2025</option>
-              <option value="iso">2025-08-13</option>
-              <option value="id">Rabu, 13 Agustus 2025</option>
-            </select>
-          </div>
-
-          <div class="field-row" style="grid-column: 1 / -1;">
-            <div class="field">
-              <label for="overlayPos">Posisi Vertikal</label>
-              <select id="overlayPos">
-                <option value="bottom" selected>Bawah (default)</option>
-                <option value="top">Atas</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="overlayAlignH">Posisi Horizontal</label>
-              <select id="overlayAlignH">
-                <option value="left" selected>Kiri (default)</option>
-                <option value="center">Tengah</option>
-                <option value="right">Kanan</option>
-              </select>
-            </div>
-          </div>
-          <p class="hint" style="grid-column:1/-1;margin-top:0;">Kombinasikan keduanya untuk posisi apa saja — misal Bawah + Tengah untuk "rata tengah bawah". Posisi Horizontal baru kelihatan bedanya kalau "Lebar Overlay Maksimal" di bawah diperkecil dari 100%.</p>
-
-          <div class="settings-subhead">Tampilan Overlay</div>
-
-          <div class="field">
-            <label for="overlayScale">Ukuran Overlay <span id="overlayScaleVal">100%</span></label>
-            <input type="range" id="overlayScale" min="50" max="150" step="0.5" value="100">
-          </div>
-
-          <div class="field">
-            <label for="overlayWidthPct">Lebar Overlay Maksimal <span id="overlayWidthPctVal">100%</span></label>
-            <input type="range" id="overlayWidthPct" min="50" max="100" value="100">
-          </div>
-
-          <div class="field-row" style="grid-column: 1 / -1;">
-            <div class="field">
-              <label for="offsetX">Geser Horizontal (slide manual) <span id="offsetXVal">0%</span></label>
-              <input type="range" id="offsetX" min="-50" max="50" step="0.1" value="0">
-            </div>
-            <div class="field">
-              <label for="offsetY">Geser Vertikal (slide manual) <span id="offsetYVal">0%</span></label>
-              <input type="range" id="offsetY" min="-50" max="50" step="0.1" value="0">
-            </div>
-          </div>
-          <p class="hint" style="grid-column:1/-1;margin-top:0;">Geser posisi overlay secara manual dari titik Posisi Vertikal/Horizontal di atas — geser ke kanan/kiri atau atas/bawah sedikit demi sedikit sampai pas. Batas geser dijaga otomatis supaya overlay tidak keluar dari foto.</p>
-
-          <div class="field">
-            <label for="bgOpacity">Opacity Background <span id="bgOpacityVal">65%</span></label>
-            <input type="range" id="bgOpacity" min="0" max="100" value="65">
-          </div>
-
-          <div class="field">
-            <label for="fontColor">Warna Font</label>
-            <div class="field-row">
-              <input type="color" id="fontColor" value="#ffffff">
-              <input type="text" id="fontColorHex" value="#ffffff" maxlength="7">
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="fontScale">Ukuran Font <span id="fontScaleVal">100%</span></label>
-            <input type="range" id="fontScale" min="70" max="140" value="100">
-          </div>
-
-          <div class="field">
-            <label for="cornerRadius">Radius Sudut (fillet) <span id="cornerRadiusVal">10px</span></label>
-            <input type="range" id="cornerRadius" min="0" max="40" value="10">
-          </div>
-
-          <div class="field">
-            <label for="shadowStrength">Bayangan (shadow) <span id="shadowStrengthVal">35%</span></label>
-            <input type="range" id="shadowStrength" min="0" max="100" value="35">
-          </div>
-
-          <div class="settings-subhead">Logo &amp; Nama Proyek</div>
-
-          <div class="field">
-            <label for="badgeStyle">Gaya Logo "GPS Map Camera"</label>
-            <select id="badgeStyle">
-              <option value="logo" selected>Gambar Logo (default GPS Map Camera)</option>
-              <option value="text-white">Teks Putih</option>
-              <option value="text-dark">Teks Gelap</option>
-              <option value="none">Tanpa Logo (sembunyikan)</option>
-            </select>
-          </div>
-
-          <div class="field" id="badgeScaleField">
-            <label for="badgeScale">Ukuran Logo Badge <span id="badgeScaleVal">100%</span></label>
-            <input type="range" id="badgeScale" min="60" max="160" value="100">
-          </div>
-
-          <div class="field">
-            <label for="projectNameOverride">Project Name (override semua baris)</label>
-            <input type="text" id="projectNameOverride" placeholder="Kosongkan untuk pakai kolom CSV">
-          </div>
-
-          <div class="settings-subhead">Peta &amp; Lokasi</div>
-
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="showMap" checked>
-              <span>Tampilkan thumbnail peta (kiri bawah)</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="showLocation" checked>
-              <span>Tampilkan baris "Project Name"</span>
-            </label>
-          </div>
-
-          <div class="field" id="mapSourceField">
-            <label for="mapSource">Sumber Peta</label>
-            <select id="mapSource">
-              <option value="offline">Offline (placeholder, tanpa internet)</option>
-              <option value="street" selected>Peta Jalan (Esri Street Map)</option>
-              <option value="satellite">Citra Satelit (Esri)</option>
-            </select>
-          </div>
-
-          <div class="field" id="mapZoomField">
-            <label for="mapZoom">Zoom Peta <span id="mapZoomVal">16</span></label>
-            <input type="range" id="mapZoom" min="10" max="19" value="16">
-          </div>
-
-          <div class="map-detail-fields" id="mapDetailFields">
-            <div class="field">
-              <label for="mapScale">Ukuran Peta <span id="mapScaleVal">100%</span></label>
-              <input type="range" id="mapScale" min="50" max="200" value="100">
-            </div>
-            <div class="field">
-              <label for="mapAspect">Rasio Peta</label>
-              <select id="mapAspect">
-                <option value="1:1" selected>1:1 (persegi, seperti aplikasi)</option>
-                <option value="4:3">4:3 (landscape)</option>
-                <option value="3:4">3:4 (potret)</option>
-                <option value="16:9">16:9 (lebar)</option>
-                <option value="9:16">9:16 (tinggi)</option>
-              </select>
-            </div>
-
-            <div class="field field-check" id="mapPinField">
               <label class="checkbox-row">
-                <input type="checkbox" id="showMapPin" checked>
-                <span>Tampilkan pin lokasi di atas peta</span>
+                <input type="checkbox" id="showTime">
+                <span>Tampilkan jam di baris tanggal</span>
               </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="mapLabelShow">
-                <span>Tampilkan label di pojok peta</span>
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="showMapCone">
-                <span>Tampilkan arah kamera (kerucut biru)</span>
-              </label>
+              <div class="field-row">
+                <div class="field">
+                  <label for="noteOverride">Catatan (semua baris)</label>
+                  <input type="text" id="noteOverride" placeholder="Pakai kolom CSV">
+                </div>
+                <div class="field">
+                  <label for="contactOverride">Kontak (semua baris)</label>
+                  <input type="text" id="contactOverride" placeholder="Pakai kolom CSV">
+                </div>
+              </div>
+              <p class="hint">Baris catatan, kontak, dan info suhu/angin/ketinggian/arah hanya muncul kalau ada isinya (kolom CSV <code>catatan</code>, <code>kontak</code>, <code>suhu</code>, <code>angin</code>, <code>ketinggian</code>, <code>arah</code>).</p>
             </div>
-            <div class="field">
-              <label for="mapLabelText">Teks label peta</label>
-              <input type="text" id="mapLabelText" maxlength="20" placeholder="Google">
-              <label for="mapConeBearing" style="margin-top:8px;">Arah kamera <span id="mapConeBearingVal">106°</span></label>
-              <input type="range" id="mapConeBearing" min="0" max="359" value="106">
-            </div>
-            <p class="hint" style="margin-top:0;">Ukuran Peta = tinggi peta dibanding tinggi kotak teks (100% = sama tinggi, seperti aplikasi). Arah kamera dipakai untuk semua foto, kecuali baris yang punya kolom <code>arah</code> sendiri (mis. "165" atau "165° S"). Gambar peta tetap dari Esri; label hanya teks hiasan dan bisa kamu ganti.</p>
-          </div>
-
-          <div class="field field-check hidden" id="mapNoticeField">
-            <p class="hint" id="mapNoticeText" style="margin:0;"></p>
-          </div>
-
-          <div class="settings-subhead">Deteksi Otomatis dari Koordinat</div>
-
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="autoGeocode" checked>
-              <span>Lokasi &amp; alamat (reverse geocoding)</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="autoElevation">
-              <span>Ketinggian (elevation)</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="autoWeather">
-              <span>Suhu &amp; angin (cuaca historis)</span>
-            </label>
-          </div>
-          <p class="hint" style="grid-column:1/-1;margin-top:0;">Isi otomatis data yang masih kosong dari koordinat (Template 1 &amp; 2) — gratis, butuh internet, tidak pernah menimpa data CSV yang sudah kamu isi. <strong>Catatan, Kontak &amp; Arah tidak bisa dideteksi otomatis</strong>, isi manual kalau perlu.</p>
-
-          <p class="hint" style="grid-column:1/-1;margin-top:0;margin-bottom:0;">Tampilkan bagian mana saja di judul lokasi:</p>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="showGeoCity" checked>
-              <span>Kota</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="showGeoProvince" checked>
-              <span>Provinsi</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="showGeoCountry" checked>
-              <span>Negara</span>
-            </label>
-            <label class="checkbox-row">
-              <input type="checkbox" id="showGeoFlag" checked>
-              <span>Bendera Negara</span>
-            </label>
-          </div>
-          <p class="hint" style="grid-column:1/-1;margin-top:0;">Bisa dicentang sebagian saja (misal cuma Kota &amp; Negara, tanpa Provinsi). Berlaku untuk Template 1 &amp; 2, baik judul dari deteksi otomatis maupun dari kolom Kota di CSV.</p>
-
+          </details>
         </div>
 
+        <details class="group" open data-group="placement">
+          <summary><span>Posisi &amp; ukuran</span><span class="group-meta">bisa juga digeser di preview</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <div class="field-row">
+              <div class="field">
+                <label for="overlayPos">Vertikal</label>
+                <select id="overlayPos">
+                  <option value="bottom" selected>Bawah</option>
+                  <option value="top">Atas</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="overlayAlignH">Horizontal</label>
+                <select id="overlayAlignH">
+                  <option value="left" selected>Kiri</option>
+                  <option value="center">Tengah</option>
+                  <option value="right">Kanan</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="overlayScale">Ukuran watermark <span class="val" id="overlayScaleVal">100%</span></label>
+              <input type="range" id="overlayScale" min="50" max="150" step="0.5" value="100">
+            </div>
+            <div class="field">
+              <label for="overlayWidthPct">Lebar maksimal <span class="val" id="overlayWidthPctVal">100%</span></label>
+              <input type="range" id="overlayWidthPct" min="50" max="100" value="100">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="offsetX">Geser horizontal <span class="val" id="offsetXVal">0%</span></label>
+                <input type="range" id="offsetX" min="-50" max="50" step="0.1" value="0">
+              </div>
+              <div class="field">
+                <label for="offsetY">Geser vertikal <span class="val" id="offsetYVal">0%</span></label>
+                <input type="range" id="offsetY" min="-50" max="50" step="0.1" value="0">
+              </div>
+            </div>
+            <p class="hint">Bawah + Tengah = rata tengah bawah. Posisi horizontal baru terlihat bila lebar maksimal di bawah 100%.</p>
+          </div>
+        </details>
+
+        <details class="group" data-group="style">
+          <summary><span>Tampilan</span><span class="group-meta">warna · font · sudut</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <div class="field">
+              <label for="bgOpacity">Gelap latar <span class="val" id="bgOpacityVal">65%</span></label>
+              <input type="range" id="bgOpacity" min="0" max="100" value="65">
+            </div>
+            <div class="field">
+              <label for="fontScale">Ukuran font <span class="val" id="fontScaleVal">100%</span></label>
+              <input type="range" id="fontScale" min="70" max="140" value="100">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="cornerRadius">Sudut <span class="val" id="cornerRadiusVal">10px</span></label>
+                <input type="range" id="cornerRadius" min="0" max="40" value="10">
+              </div>
+              <div class="field">
+                <label for="shadowStrength">Bayangan <span class="val" id="shadowStrengthVal">35%</span></label>
+                <input type="range" id="shadowStrength" min="0" max="100" value="35">
+              </div>
+            </div>
+            <div class="field">
+              <label for="fontColor">Warna teks</label>
+              <div class="color-field">
+                <input type="color" id="fontColor" value="#ffffff">
+                <input type="text" id="fontColorHex" class="mono" value="#ffffff" maxlength="7">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" data-group="logo">
+          <summary><span>Logo &amp; nama proyek</span><span class="group-meta">badge "GPS Map Camera"</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <div class="segmented logo-modes" role="radiogroup" aria-label="Sumber logo">
+              <label class="radio-pill">
+                <input type="radio" name="logoMode" value="default" checked>
+                <span>Logo bawaan</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="logoMode" value="upload">
+                <span>Upload PNG</span>
+              </label>
+            </div>
+            <div id="logoUploadZone" class="dropzone dropzone-sm hidden">
+              <p><strong>Klik / lepas logo PNG</strong> (transparan disarankan)</p>
+              <input type="file" id="logoInput" accept=".png,image/png" hidden>
+            </div>
+            <div class="logo-preview-row">
+              <div class="logo-preview-box">
+                <img id="logoPreview" alt="Logo preview">
+              </div>
+              <p id="logoStatus" class="hint">Menggunakan logo bawaan.</p>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="badgeStyle">Gaya badge</label>
+                <select id="badgeStyle">
+                  <option value="logo" selected>Gambar logo</option>
+                  <option value="text-white">Teks putih</option>
+                  <option value="text-dark">Teks gelap</option>
+                  <option value="none">Tanpa logo</option>
+                </select>
+              </div>
+              <div class="field" id="badgeScaleField">
+                <label for="badgeScale">Ukuran badge <span class="val" id="badgeScaleVal">100%</span></label>
+                <input type="range" id="badgeScale" min="60" max="160" value="100">
+              </div>
+            </div>
+            <div class="field">
+              <label for="projectNameOverride">Project name (semua baris)</label>
+              <input type="text" id="projectNameOverride" placeholder="Pakai kolom Lokasi dari CSV">
+            </div>
+          </div>
+        </details>
+
+        <details class="group" data-group="map">
+          <summary><span>Peta</span><span class="group-meta">sumber · zoom · pin · label</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <label class="checkbox-row">
+              <input type="checkbox" id="showMap" checked>
+              <span>Tampilkan peta</span>
+            </label>
+            <div class="field-row">
+              <div class="field" id="mapSourceField">
+                <label for="mapSource">Sumber peta</label>
+                <select id="mapSource">
+                  <option value="offline">Offline (placeholder)</option>
+                  <option value="street" selected>Peta jalan (Esri)</option>
+                  <option value="satellite">Citra satelit (Esri)</option>
+                </select>
+              </div>
+              <div class="field" id="mapZoomField">
+                <label for="mapZoom">Zoom <span class="val" id="mapZoomVal">16</span></label>
+                <input type="range" id="mapZoom" min="10" max="19" value="16">
+              </div>
+            </div>
+
+            <div class="map-detail-fields" id="mapDetailFields">
+              <div class="field-row">
+                <div class="field">
+                  <label for="mapScale">Ukuran peta <span class="val" id="mapScaleVal">100%</span></label>
+                  <input type="range" id="mapScale" min="50" max="200" value="100">
+                </div>
+                <div class="field">
+                  <label for="mapAspect">Rasio</label>
+                  <select id="mapAspect">
+                    <option value="1:1" selected>1:1 persegi (aplikasi)</option>
+                    <option value="4:3">4:3 landscape</option>
+                    <option value="3:4">3:4 potret</option>
+                    <option value="16:9">16:9 lebar</option>
+                    <option value="9:16">9:16 tinggi</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field field-check" id="mapPinField">
+                <label class="checkbox-row">
+                  <input type="checkbox" id="showMapPin" checked>
+                  <span>Pin lokasi</span>
+                </label>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="mapLabelShow">
+                  <span>Label di pojok peta</span>
+                </label>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="showMapCone">
+                  <span>Arah kamera (kerucut biru)</span>
+                </label>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="mapLabelText">Teks label</label>
+                  <input type="text" id="mapLabelText" maxlength="20" placeholder="Google">
+                </div>
+                <div class="field">
+                  <label for="mapConeBearing">Arah kamera <span class="val" id="mapConeBearingVal">106°</span></label>
+                  <input type="range" id="mapConeBearing" min="0" max="359" value="106">
+                </div>
+              </div>
+              <p class="hint">Ukuran peta dibanding tinggi kotak teks (100% = sama tinggi). Arah kamera per foto diambil dari EXIF atau kolom <code>arah</code> kalau ada. Gambar peta dari Esri; label "Google" hanya hiasan.</p>
+            </div>
+
+            <div class="field field-check hidden" id="mapNoticeField">
+              <p class="hint" id="mapNoticeText"></p>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" data-group="geo">
+          <summary><span>Lokasi otomatis &amp; judul</span><span class="group-meta">kota · provinsi · negara</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <div class="field field-check">
+              <label class="checkbox-row">
+                <input type="checkbox" id="autoGeocode" checked>
+                <span>Lokasi &amp; alamat dari koordinat</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="autoElevation">
+                <span>Ketinggian</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="autoWeather">
+                <span>Suhu &amp; angin (cuaca historis)</span>
+              </label>
+            </div>
+            <p class="hint">Hanya mengisi data yang kosong — tidak pernah menimpa isi CSV. Butuh internet.</p>
+            <div class="subhead">Bagian judul lokasi</div>
+            <div class="field field-check check-grid">
+              <label class="checkbox-row">
+                <input type="checkbox" id="showGeoCity" checked>
+                <span>Kota</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="showGeoProvince" checked>
+                <span>Provinsi</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="showGeoCountry" checked>
+                <span>Negara</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="showGeoFlag" checked>
+                <span>Bendera</span>
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" data-group="output">
+          <summary><span>File PNG &amp; Template 1</span><span class="group-meta">resolusi · tanggal · project</span><svg class="group-chevron" width="16" height="16" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="group-body">
+            <div class="field">
+              <label for="canvasSize">Resolusi PNG (watermark transparan)</label>
+              <select id="canvasSize">
+                <option value="1080x608">1080 × 608 (16:9)</option>
+                <option value="1080x500" selected>1080 × 500 (standar GPS Map Camera)</option>
+                <option value="1920x1080">1920 × 1080 (Full HD)</option>
+                <option value="1080x1350">1080 × 1350 (potret)</option>
+                <option value="custom">Kustom…</option>
+              </select>
+              <div id="customSizeRow" class="field-row custom-size hidden">
+                <input type="number" id="customW" class="mono" placeholder="Lebar" min="200" max="4000">
+                <span class="times">×</span>
+                <input type="number" id="customH" class="mono" placeholder="Tinggi" min="150" max="4000">
+              </div>
+            </div>
+            <div class="field">
+              <label for="dateFormat">Format tanggal (Template 1)</label>
+              <select id="dateFormat">
+                <option value="short">Wednesday, 08/13/2025</option>
+                <option value="long">Wednesday, August 13, 2025</option>
+                <option value="iso">2025-08-13</option>
+                <option value="id">Rabu, 13 Agustus 2025</option>
+              </select>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="showLocation" checked>
+              <span>Baris "Project Name" (Template 1)</span>
+            </label>
+          </div>
+        </details>
+
         <div class="preset-row">
-          <button class="btn btn-secondary" id="exportPresetBtn" type="button">Export Preset JSON</button>
-          <label class="btn btn-secondary btn-file">
-            Import Preset JSON
+          <span class="preset-label">Preset</span>
+          <button class="btn btn-ghost btn-sm" id="exportPresetBtn" type="button">Export JSON</button>
+          <label class="btn btn-ghost btn-sm btn-file">
+            Import JSON
             <input type="file" id="importPresetInput" accept=".json" hidden>
           </label>
         </div>
       </section>
-
     </div>
 
-    <!-- ============ RIGHT COLUMN : PREVIEW + GENERATE ============ -->
+    <!-- ============ PREVIEW + GENERATE (sticky) ============ -->
     <div class="col col-right">
+      <div class="sticky-stack">
+        <section class="card card-preview">
+          <div class="card-head">
+            <h2>Preview</h2>
+            <span class="tag tag-mono" id="previewRowTag">—</span>
+          </div>
+          <label class="checkbox-row compact hidden" id="previewOnPhotoRow">
+            <input type="checkbox" id="previewOnPhoto" checked>
+            <span>Di atas foto asli <span class="muted">(<span id="previewPhotoName"></span>)</span></span>
+          </label>
+          <div class="preview-canvas-wrap stage">
+            <canvas id="previewCanvas"></canvas>
+            <div id="previewStampFrame" class="stamp-frame hidden" title="Geser untuk memindah watermark">
+              <span class="stamp-frame-handle" id="previewStampHandle" title="Tarik untuk memperbesar / memperkecil"></span>
+            </div>
+            <div id="previewEmpty" class="preview-empty">
+              <svg width="28" height="28" aria-hidden="true"><use href="#i-stamp"/></svg>
+              <p>Isi data foto untuk melihat preview watermark</p>
+            </div>
+          </div>
+          <div class="preview-toolbar">
+            <p class="hint" id="previewDragHint"><strong>Geser</strong> kotak putus-putus untuk memindah, <strong>tarik titik</strong> di pojoknya untuk mengubah ukuran.</p>
+            <button class="btn btn-ghost btn-sm" id="resetPlacementBtn" type="button">Reset posisi</button>
+          </div>
+          <div class="preview-controls">
+            <button class="btn btn-secondary btn-sm" id="prevSampleBtn" type="button" aria-label="Baris sebelumnya">‹ Sebelumnya</button>
+            <button class="btn btn-secondary btn-sm" id="nextSampleBtn" type="button" aria-label="Baris berikutnya">Berikutnya ›</button>
+            <button class="btn btn-secondary btn-sm" id="downloadSampleBtn" type="button">
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>Sample PNG
+            </button>
+          </div>
+        </section>
 
-      <section class="card card-preview">
-        <div class="card-head">
-          <h2>Preview</h2>
-          <span class="preview-tag" id="previewRowTag">Baris contoh #1</span>
-        </div>
-        <label class="checkbox-row hidden" id="previewOnPhotoRow" style="margin-bottom:10px;">
-          <input type="checkbox" id="previewOnPhoto" checked>
-          <span>Preview di atas foto asli (<span id="previewPhotoName"></span>)</span>
-        </label>
-        <div class="preview-canvas-wrap">
-          <canvas id="previewCanvas"></canvas>
-          <div id="previewStampFrame" class="stamp-frame hidden" title="Geser untuk memindah watermark">
-            <span class="stamp-frame-handle" id="previewStampHandle" title="Tarik untuk memperbesar / memperkecil"></span>
+        <section class="card card-generate">
+          <div class="generate-row">
+            <div class="generate-stats" id="generateStats">
+              <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-label">baris data</span></div>
+            </div>
+            <button class="btn btn-primary btn-generate" id="generateBtn" type="button" disabled>
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>
+              Generate PNG &amp; download ZIP
+            </button>
           </div>
-          <div id="previewEmpty" class="preview-empty">
-            <p>Upload CSV atau tambah baris manual untuk melihat preview overlay</p>
+          <div id="progressWrap" class="progress-wrap hidden">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-meta">
+              <span id="progressText">Generating… 0 / 0</span>
+              <span id="progressEta">ETA: —</span>
+            </div>
           </div>
-        </div>
-        <p class="hint" id="previewDragHint" style="margin-top:8px;">Atur langsung di preview: <strong>geser kotak putus-putus</strong> untuk memindah watermark, <strong>tarik titik bulat di pojoknya</strong> untuk memperbesar/memperkecil (peta &amp; tulisan ikut menyesuaikan). Nilainya tersambung ke slider "Ukuran Overlay" &amp; "Geser" di pengaturan. <button class="btn btn-tiny" id="resetPlacementBtn" type="button">Reset posisi &amp; ukuran</button></p>
-        <div class="preview-controls">
-          <button class="btn btn-secondary" id="prevSampleBtn" type="button">‹ Sebelumnya</button>
-          <button class="btn btn-secondary" id="nextSampleBtn" type="button">Berikutnya ›</button>
-          <button class="btn btn-secondary" id="downloadSampleBtn" type="button">Download Sample PNG</button>
-        </div>
-      </section>
-
-      <section class="card card-generate">
-        <div class="card-head">
-          <h2>Generate</h2>
-        </div>
-        <div class="generate-stats" id="generateStats">
-          <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-label">baris data</span></div>
-        </div>
-        <button class="btn btn-primary btn-generate" id="generateBtn" type="button" disabled>
-          Generate &amp; Download ZIP
-        </button>
-        <div id="progressWrap" class="progress-wrap hidden">
-          <div class="progress-bar-track">
-            <div class="progress-bar-fill" id="progressFill"></div>
+          <div id="doneMsg" class="done-msg hidden">
+            Selesai! ZIP berisi <strong id="doneCount">0</strong> file PNG telah diunduh.
           </div>
-          <div class="progress-meta">
-            <span id="progressText">Generating… 0 / 0</span>
-            <span id="progressEta">ETA: —</span>
+          <div id="linkedPhotosBox" class="linked-photos-box hidden">
+            <p><strong id="linkedPhotosCount">0</strong> foto terhubung. Sudah pas di preview? Tempel watermark ke semua foto:</p>
+            <button class="btn btn-accent btn-block" id="goAttachBtn" type="button">
+              Lanjut ke Tempel ke Foto
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
           </div>
-        </div>
-        <div id="doneMsg" class="done-msg hidden">
-          Selesai! ZIP berisi <strong id="doneCount">0</strong> file PNG telah diunduh.
-        </div>
-        <div id="linkedPhotosBox" class="linked-photos-box hidden">
-          <p class="hint" style="margin-top:0;"><strong id="linkedPhotosCount">0</strong> foto sudah terhubung. Kalau ukuran &amp; posisinya sudah pas di preview, tempel watermark langsung ke semua foto:</p>
-          <button class="btn btn-primary btn-block" id="goAttachBtn" type="button">Lanjut: Tempel ke Foto &amp; Download →</button>
-        </div>
-      </section>
-
+        </section>
+      </div>
     </div>
   </div>
   </div><!-- /tab-overlay -->
 
-  <!-- ============ TAB 2 : ATTACH OVERLAY TO PHOTO ============ -->
+  <!-- ============ TEMPEL KE FOTO ============ -->
   <div id="tab-attach" class="tab-panel">
-    <div class="layout">
+    <div class="workspace">
       <div class="col col-left">
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">A</span>
-            <h2>Upload Foto</h2>
-          </div>
+          <div class="card-head"><h2>Foto</h2></div>
           <div id="attachDropZone" class="dropzone">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p><strong>Drag &amp; drop foto</strong> (bisa banyak / satu folder), atau klik untuk memilih</p>
+            <svg width="26" height="26" aria-hidden="true"><use href="#i-upload"/></svg>
+            <p><strong>Tarik &amp; lepas foto</strong> (boleh banyak / satu folder), atau klik untuk memilih</p>
+            <span class="dropzone-meta">JPG · PNG · HEIC</span>
             <input type="file" id="attachInput" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,.heic,.heif" multiple hidden>
           </div>
           <div id="attachFileInfo" class="file-info hidden"></div>
-          <p class="hint">Overlay GPS Map Camera akan "dibakar" langsung ke setiap foto. Foto dipasangkan dengan baris data (dari menu Watermark GPS: CSV, input manual, maupun folder foto) berdasarkan urutan, atau berdasarkan nama file jika cocok. Mendukung JPG, PNG, dan <strong>HEIC/HEIF (foto iPhone)</strong> — foto HEIC otomatis dikonversi di browser sebelum diproses.</p>
+          <p class="hint">Watermark "dibakar" ke tiap foto. Data, logo, dan semua pengaturan diambil dari menu <strong>Watermark GPS</strong>. Foto HEIC dikonversi otomatis di browser.</p>
         </section>
 
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">B</span>
-            <h2>Pencocokan Data</h2>
-          </div>
+          <div class="card-head"><h2>Pencocokan data</h2></div>
           <div class="field">
-            <label for="attachMatchMode">Cara pasangkan foto dengan data CSV</label>
+            <label for="attachMatchMode">Pasangkan foto dengan data</label>
             <select id="attachMatchMode">
-              <option value="filename">Berdasarkan nama file (foto ↔ kolom Nama File)</option>
-              <option value="order">Berdasarkan urutan (foto ke-1 ↔ baris ke-1, dst)</option>
+              <option value="filename">Berdasarkan nama file</option>
+              <option value="order">Berdasarkan urutan (foto ke-1 ↔ baris ke-1)</option>
             </select>
           </div>
-          <p class="hint">Data CSV, logo, dan semua pengaturan overlay diambil dari menu <strong>Watermark GPS</strong>. Atur tampilan overlay di sana dulu, lalu kembali ke sini untuk menempelkannya ke foto.</p>
         </section>
 
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">C</span>
-            <h2>Opsi Koordinat &amp; Metadata</h2>
-          </div>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="attachScatter">
-              <span>Acak titik koordinat dalam radius tertentu</span>
-            </label>
-          </div>
+          <div class="card-head"><h2>Koordinat &amp; metadata</h2></div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="attachScatter">
+            <span>Acak titik koordinat dalam radius</span>
+          </label>
           <div class="field" id="attachScatterRow">
-            <label for="attachScatterMeters">Radius acak <span id="attachScatterMetersVal">8 m</span></label>
+            <label for="attachScatterMeters">Radius acak <span class="val" id="attachScatterMetersVal">8 m</span></label>
             <input type="range" id="attachScatterMeters" min="1" max="50" value="8">
-            <p class="hint">Setiap foto akan digeser secara acak 0–N meter dari titik CSV, jadi tidak semua persis di titik yang sama.</p>
+            <p class="hint">Tiap foto digeser acak 0–N meter, jadi tidak semua persis di titik yang sama.</p>
           </div>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="attachWriteExif" checked>
-              <span>Tulis juga GPS &amp; tanggal ke metadata EXIF foto (JPG saja)</span>
-            </label>
-          </div>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="attachCleanExif">
-              <span>Bersihkan metadata lain (hasil file bersih, hanya GPS + tanggal)</span>
-            </label>
-          </div>
-          <div class="field">
-            <label for="attachFormat">Format output foto</label>
-            <select id="attachFormat">
-              <option value="image/jpeg">JPG (mendukung EXIF, ukuran lebih kecil)</option>
-              <option value="image/png">PNG (tanpa EXIF, kualitas penuh)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="attachQuality">Kualitas JPG <span id="attachQualityVal">92%</span></label>
-            <input type="range" id="attachQuality" min="60" max="100" value="92">
+          <label class="checkbox-row">
+            <input type="checkbox" id="attachWriteExif" checked>
+            <span>Tulis juga GPS &amp; tanggal ke EXIF (JPG)</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="attachCleanExif">
+            <span>Bersihkan metadata lain</span>
+          </label>
+          <div class="field-row">
+            <div class="field">
+              <label for="attachFormat">Format output</label>
+              <select id="attachFormat">
+                <option value="image/jpeg">JPG (EXIF, lebih kecil)</option>
+                <option value="image/png">PNG (tanpa EXIF)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="attachQuality">Kualitas JPG <span class="val" id="attachQualityVal">92%</span></label>
+              <input type="range" id="attachQuality" min="60" max="100" value="92">
+            </div>
           </div>
         </section>
       </div>
 
       <div class="col col-right">
-        <section class="card card-preview">
-          <div class="card-head"><h2>Preview</h2></div>
-          <div class="preview-stage">
-            <canvas id="attachPreviewCanvas"></canvas>
-          </div>
-          <p class="hint" id="attachPreviewHint">Upload foto dan pastikan data sudah dimuat di menu Watermark GPS untuk melihat preview.</p>
-        </section>
+        <div class="sticky-stack">
+          <section class="card card-preview">
+            <div class="card-head"><h2>Preview</h2></div>
+            <div class="preview-stage stage">
+              <canvas id="attachPreviewCanvas"></canvas>
+            </div>
+            <p class="hint" id="attachPreviewHint">Upload foto dan pastikan data sudah ada di menu Watermark GPS untuk melihat preview.</p>
+          </section>
 
-        <section class="card card-generate">
-          <div class="card-head"><h2>Proses &amp; Download</h2></div>
-          <div class="gen-stats">
-            <div class="stat"><span class="stat-num" id="attachStatPhotos">0</span><span class="stat-label">foto</span></div>
-            <div class="stat"><span class="stat-num" id="attachStatRows">0</span><span class="stat-label">baris data</span></div>
-          </div>
-          <button class="btn btn-primary btn-block" id="attachGenerateBtn" type="button" disabled>Tempel Overlay &amp; Download ZIP</button>
-          <div id="attachProgressWrap" class="progress-wrap hidden">
-            <div class="progress-bar"><div class="progress-bar-fill" id="attachProgressFill"></div></div>
-            <p class="progress-text" id="attachProgressText"></p>
-          </div>
-          <div id="attachDoneMsg" class="done-msg hidden"></div>
-        </section>
+          <section class="card card-generate">
+            <div class="generate-row">
+              <div class="gen-stats generate-stats">
+                <div class="stat"><span class="stat-num" id="attachStatPhotos">0</span><span class="stat-label">foto</span></div>
+                <div class="stat"><span class="stat-num" id="attachStatRows">0</span><span class="stat-label">baris data</span></div>
+              </div>
+              <button class="btn btn-primary btn-generate" id="attachGenerateBtn" type="button" disabled>
+                <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>
+                Tempel &amp; download ZIP
+              </button>
+            </div>
+            <div id="attachProgressWrap" class="progress-wrap hidden">
+              <div class="progress-bar"><div class="progress-bar-fill" id="attachProgressFill"></div></div>
+              <p class="progress-text" id="attachProgressText"></p>
+            </div>
+            <div id="attachDoneMsg" class="done-msg hidden"></div>
+          </section>
+        </div>
       </div>
     </div>
   </div><!-- /tab-attach -->
 
-  <!-- ============ TAB 3 : GEOTAG METADATA ONLY ============ -->
+  <!-- ============ GEOTAG METADATA ============ -->
   <div id="tab-geotag" class="tab-panel">
-    <div class="layout">
+    <div class="workspace">
       <div class="col col-left">
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">A</span>
-            <h2>Upload Foto (JPG/HEIC)</h2>
-          </div>
+          <div class="card-head"><h2>Foto JPG / HEIC</h2></div>
           <div id="geotagDropZone" class="dropzone">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p><strong>Drag &amp; drop foto JPG/HEIC</strong> yang ingin ditambahkan GPS + tanggal</p>
+            <svg width="26" height="26" aria-hidden="true"><use href="#i-upload"/></svg>
+            <p><strong>Tarik &amp; lepas foto</strong> yang ingin diberi GPS + tanggal</p>
+            <span class="dropzone-meta">JPG · HEIC</span>
             <input type="file" id="geotagInput" accept="image/jpeg,image/jpg,image/heic,image/heif,.heic,.heif" multiple hidden>
           </div>
           <div id="geotagFileInfo" class="file-info hidden"></div>
-          <p class="hint">Fitur ini <strong>hanya menulis metadata</strong> (GPS + tanggal/waktu) ke dalam file foto — tidak menambahkan watermark/overlay apa pun. Cocok untuk foto inspeksi yang GPS-nya tidak terekam kamera. EXIF sendiri cuma didukung format JPG, jadi foto <strong>HEIC (iPhone) otomatis dikonversi ke JPG</strong> lebih dulu sebelum ditulisi metadata — hasil downloadnya berupa file .jpg, bukan .heic.</p>
+          <p class="hint">Hanya menulis metadata — tanpa watermark. EXIF hanya ada di JPG, jadi foto HEIC dikonversi ke JPG dulu (hasil unduhan berformat .jpg).</p>
         </section>
 
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">B</span>
-            <h2>Sumber Koordinat</h2>
-          </div>
+          <div class="card-head"><h2>Sumber koordinat</h2></div>
           <div class="field">
             <label for="geotagSource">Ambil koordinat &amp; tanggal dari</label>
             <select id="geotagSource">
               <option value="manual">Input manual (satu nilai untuk semua foto)</option>
-              <option value="csv">Data dari menu Watermark GPS (per foto, berdasarkan urutan)</option>
+              <option value="csv">Data menu Watermark GPS (per foto, urutan)</option>
             </select>
           </div>
           <div id="geotagManualFields">
             <div class="field-row">
               <div class="field">
                 <label for="geotagLat">Latitude</label>
-                <input type="text" id="geotagLat" placeholder="-0.664651">
+                <input type="text" id="geotagLat" class="mono" placeholder="-0.664651" inputmode="decimal">
               </div>
               <div class="field">
                 <label for="geotagLng">Longitude</label>
-                <input type="text" id="geotagLng" placeholder="117.264083">
+                <input type="text" id="geotagLng" class="mono" placeholder="117.264083" inputmode="decimal">
               </div>
             </div>
             <div class="field">
@@ -898,150 +919,153 @@
         </section>
 
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">C</span>
-            <h2>Opsi</h2>
-          </div>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="geotagScatter">
-              <span>Acak titik koordinat dalam radius tertentu</span>
-            </label>
-          </div>
+          <div class="card-head"><h2>Opsi</h2></div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="geotagScatter">
+            <span>Acak titik koordinat dalam radius</span>
+          </label>
           <div class="field" id="geotagScatterRow">
-            <label for="geotagScatterMeters">Radius acak <span id="geotagScatterMetersVal">8 m</span></label>
+            <label for="geotagScatterMeters">Radius acak <span class="val" id="geotagScatterMetersVal">8 m</span></label>
             <input type="range" id="geotagScatterMeters" min="1" max="50" value="8">
           </div>
-          <div class="field field-check">
-            <label class="checkbox-row">
-              <input type="checkbox" id="geotagClean" checked>
-              <span>Bersihkan metadata lain (hasil file bersih, hanya GPS + tanggal)</span>
-            </label>
-          </div>
-          <p class="hint">Dengan opsi bersih aktif, semua metadata lama (merek kamera, software, dsb) dihapus — file hasil hanya berisi GPS + tanggal yang kamu tentukan.</p>
+          <label class="checkbox-row">
+            <input type="checkbox" id="geotagClean" checked>
+            <span>Bersihkan metadata lain (hanya GPS + tanggal)</span>
+          </label>
         </section>
 
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">D</span>
-            <h2>Metadata Tambahan <span class="optional">(opsional)</span></h2>
-          </div>
-          <p class="hint" style="margin-top:0;">Data ini ikut ditulis ke EXIF setiap foto pada batch ini (nilai yang sama untuk semua foto) — berguna untuk kelengkapan dokumentasi SIMPEL PPU seperti nama petugas/surveyor dan instansi pelaksana.</p>
-          <div class="field">
-            <label for="geotagAltitude">Ketinggian / Altitude (meter)</label>
-            <input type="text" id="geotagAltitude" placeholder="Contoh: 25 (kosongkan jika tidak tahu)">
-          </div>
-          <div class="field">
-            <label for="geotagDescription">Keterangan Foto</label>
-            <input type="text" id="geotagDescription" placeholder="Contoh: Inspeksi rutin area proses A">
+          <div class="card-head"><h2>Metadata tambahan</h2><span class="tag">opsional</span></div>
+          <p class="hint">Ikut ditulis ke EXIF semua foto di batch ini — berguna untuk kelengkapan dokumen SIMPEL PPU.</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="geotagAltitude">Ketinggian (meter)</label>
+              <input type="text" id="geotagAltitude" class="mono" placeholder="25">
+            </div>
+            <div class="field">
+              <label for="geotagDescription">Keterangan foto</label>
+              <input type="text" id="geotagDescription" placeholder="Inspeksi rutin area A">
+            </div>
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="geotagArtist">Nama Petugas / Surveyor</label>
-              <input type="text" id="geotagArtist" placeholder="Contoh: Muhammad Afifani">
+              <label for="geotagArtist">Petugas / surveyor</label>
+              <input type="text" id="geotagArtist" placeholder="Nama petugas">
             </div>
             <div class="field">
-              <label for="geotagCopyright">Instansi / Perusahaan</label>
-              <input type="text" id="geotagCopyright" placeholder="Contoh: PT Contoh Energi">
+              <label for="geotagCopyright">Instansi / perusahaan</label>
+              <input type="text" id="geotagCopyright" placeholder="PT Contoh Energi">
             </div>
           </div>
         </section>
       </div>
 
       <div class="col col-right">
-        <section class="card card-generate">
-          <div class="card-head"><h2>Proses &amp; Download</h2></div>
-          <div class="gen-stats">
-            <div class="stat"><span class="stat-num" id="geotagStatPhotos">0</span><span class="stat-label">foto JPG</span></div>
-          </div>
-          <button class="btn btn-primary btn-block" id="geotagGenerateBtn" type="button" disabled>Tulis Metadata &amp; Download ZIP</button>
-          <div id="geotagProgressWrap" class="progress-wrap hidden">
-            <div class="progress-bar"><div class="progress-bar-fill" id="geotagProgressFill"></div></div>
-            <p class="progress-text" id="geotagProgressText"></p>
-          </div>
-          <div id="geotagDoneMsg" class="done-msg hidden"></div>
-        </section>
+        <div class="sticky-stack">
+          <section class="card card-generate">
+            <div class="card-head"><h2>Proses &amp; download</h2></div>
+            <div class="generate-row">
+              <div class="gen-stats generate-stats">
+                <div class="stat"><span class="stat-num" id="geotagStatPhotos">0</span><span class="stat-label">foto</span></div>
+              </div>
+              <button class="btn btn-primary btn-generate" id="geotagGenerateBtn" type="button" disabled>
+                <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>
+                Tulis metadata &amp; download ZIP
+              </button>
+            </div>
+            <div id="geotagProgressWrap" class="progress-wrap hidden">
+              <div class="progress-bar"><div class="progress-bar-fill" id="geotagProgressFill"></div></div>
+              <p class="progress-text" id="geotagProgressText"></p>
+            </div>
+            <div id="geotagDoneMsg" class="done-msg hidden"></div>
+          </section>
 
-        <section class="card">
-          <div class="card-head"><h2>Cara Verifikasi</h2></div>
-          <p class="hint">Setelah download, kamu bisa cek metadata GPS-nya dengan klik-kanan foto → Properties → Details (Windows), atau upload ke situs pengecek EXIF. Koordinat &amp; tanggal yang kamu set akan muncul di sana.</p>
-        </section>
+          <section class="card note-card">
+            <div class="card-head"><h2>Cara memeriksa hasilnya</h2></div>
+            <p class="hint">Klik kanan foto → Properties → Details (Windows), atau buka di pengecek EXIF mana pun. Koordinat &amp; tanggal yang kamu isi akan tercantum di sana.</p>
+          </section>
+        </div>
       </div>
     </div>
   </div><!-- /tab-geotag -->
 
-  <!-- ============ TAB 4 : BUILD CSV FROM PHOTOS (standalone tool) ============ -->
+  <!-- ============ BUAT CSV DARI FOTO ============ -->
   <div id="tab-csvbuilder" class="tab-panel">
-    <div class="layout">
+    <div class="workspace workspace-wide-right">
       <div class="col col-left">
         <section class="card">
-          <div class="card-head">
-            <span class="step-badge">A</span>
-            <h2>Pilih Foto / Folder</h2>
-          </div>
+          <div class="card-head"><h2>Foto / folder</h2></div>
           <div id="cbDropZone" class="dropzone">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p><strong>Drag &amp; drop foto</strong> di sini, atau klik untuk memilih file</p>
+            <svg width="26" height="26" aria-hidden="true"><use href="#i-upload"/></svg>
+            <p><strong>Tarik &amp; lepas foto</strong> di sini, atau klik untuk memilih</p>
+            <span class="dropzone-meta">JPG · PNG · HEIC</span>
             <input type="file" id="cbFileInput" accept="image/*,.heic,.heif" multiple hidden>
           </div>
-          <label class="btn btn-secondary btn-block btn-file" style="margin-top:10px;">
-            Atau Pilih Folder Langsung
+          <label class="btn btn-secondary btn-block btn-file">
+            <svg width="16" height="16" aria-hidden="true"><use href="#i-folder"/></svg>
+            Pilih folder
             <input type="file" id="cbFolderInput" webkitdirectory multiple hidden>
           </label>
           <div id="cbFileInfo" class="file-info hidden"></div>
-          <p class="hint">Tool ini <strong>berdiri sendiri</strong>, terpisah dari menu lainnya — tidak berbagi data apapun (kecuali kamu klik "Lanjut"). Mendukung JPG, PNG, dan HEIC (foto iPhone). Untuk tiap foto, tanggal &amp; jam diambil dari metadata EXIF (kalau JPG dan datanya ada), atau dari tanggal terakhir file dimodifikasi kalau EXIF tidak ada/bukan JPG (termasuk HEIC — tanggal aslinya belum bisa dibaca dari format ini) — sumbernya ditandai di kolom "Sumber". Koordinat GPS di EXIF (kalau ada) juga otomatis diambil dan lokasinya dideteksi. <strong>Cek dan koreksi manual dulu</strong> sebelum download, terutama baris bertanda "File System" karena itu cuma perkiraan, bukan waktu pemotretan asli.</p>
+          <p class="hint">Tanggal &amp; jam diambil dari EXIF (JPG), atau dari tanggal file kalau tidak ada — ditandai di kolom "Sumber". GPS di EXIF ikut diambil dan lokasinya dideteksi. Cek dulu baris bertanda <strong>File System</strong>: itu hanya perkiraan.</p>
         </section>
       </div>
 
       <div class="col col-right">
         <section class="card">
           <div class="card-head">
-            <h2>Hasil Ekstraksi</h2>
-            <span class="preview-tag" id="cbCount"></span>
-            <button class="btn btn-tiny" id="cbResetBtn" type="button">Reset</button>
+            <h2>Hasil ekstraksi</h2>
+            <span class="tag" id="cbCount"></span>
+            <button class="btn btn-ghost btn-sm" id="cbResetBtn" type="button">Reset</button>
           </div>
-          <div class="data-preview-table-wrap" id="cbTableWrap" style="max-height:440px;">
+          <div class="data-preview-table-wrap tall" id="cbTableWrap">
             <table class="data-preview-table" id="cbTable">
               <thead>
-                <tr><th>#</th><th>Nama File</th><th>Tanggal</th><th>Waktu</th><th>Latitude</th><th>Longitude</th><th>Lokasi</th><th>Sumber</th></tr>
+                <tr><th>#</th><th>Nama file</th><th>Tanggal</th><th>Waktu</th><th>Latitude</th><th>Longitude</th><th>Lokasi</th><th>Sumber</th></tr>
               </thead>
               <tbody id="cbTableBody"></tbody>
             </table>
           </div>
-          <div id="cbEmpty" class="preview-empty" style="position:static; padding:30px 10px;">
-            <p>Pilih foto atau folder di sebelah kiri untuk mulai ekstraksi.</p>
+          <div id="cbEmpty" class="preview-empty static">
+            <svg width="28" height="28" aria-hidden="true"><use href="#i-table"/></svg>
+            <p>Pilih foto atau folder untuk mulai ekstraksi.</p>
           </div>
-          <button class="btn btn-primary btn-block" id="cbUseBtn" type="button" disabled style="margin-top:14px;">Lanjut: Atur Watermark &amp; Preview di Foto →</button>
-          <button class="btn btn-secondary btn-block" id="cbDownloadBtn" type="button" disabled style="margin-top:8px;">Download CSV</button>
-          <p class="hint">"Lanjut" langsung memindahkan data tabel ini <strong>beserta fotonya</strong> ke menu Watermark GPS — tanpa download/upload CSV. Di sana preview watermark tampil di atas foto aslinya, lalu tinggal tempel ke semua foto di menu Tempel ke Foto. Tip: hal yang sama bisa langsung dari Watermark GPS → Data Foto → "Dari Folder Foto".</p>
-          <p class="hint">CSV yang dihasilkan punya kolom yang sama dengan contoh CSV di menu Watermark GPS (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat). Kalau foto JPG-nya punya GPS di EXIF (misal dari GPS Map Camera), Latitude/Longitude otomatis terisi dan Lokasi otomatis dideteksi dari koordinatnya — kalau tidak ada, kolom itu dikosongkan untuk kamu isi manual lewat Excel/Google Sheets. Semua kolom tetap bisa dikoreksi langsung di tabel sebelum download.</p>
+          <div class="action-row">
+            <button class="btn btn-accent" id="cbUseBtn" type="button" disabled>
+              Lanjut: atur watermark &amp; preview di foto
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+            <button class="btn btn-secondary" id="cbDownloadBtn" type="button" disabled>
+              <svg width="16" height="16" aria-hidden="true"><use href="#i-download"/></svg>Download CSV
+            </button>
+          </div>
+          <p class="hint">"Lanjut" memindahkan data ini <strong>beserta fotonya</strong> ke menu Watermark GPS tanpa download/upload CSV. CSV-nya memakai kolom yang sama dengan contoh format (Nama File, Latitude, Longitude, Tanggal, Waktu, Lokasi, Alamat).</p>
         </section>
       </div>
     </div>
   </div><!-- /tab-csvbuilder -->
+
+  </main>
 
   <footer class="app-footer">
     <div class="footer-credit">
       <p class="footer-made">Dibuat oleh <strong>Muhammad Afifani Romadhan</strong> ·
         <a href="https://muhammad-afifani.github.io/Portofolio/" target="_blank" rel="noopener">Portofolio</a>
       </p>
-      <button class="btn btn-ghost btn-coffee" id="coffeeBtn" type="button">Traktir Kopi (QRIS)</button>
+      <button class="btn btn-ghost btn-sm btn-coffee" id="coffeeBtn" type="button">Traktir kopi (QRIS)</button>
     </div>
-    <p>Berjalan sepenuhnya di browser Anda — tidak ada data yang diunggah ke server manapun.</p>
-    <p id="mapAttribution" class="hidden">Peta: © Esri, HERE, Garmin, USGS, OpenStreetMap contributors / Esri, Maxar, Earthstar Geographics — tile diambil langsung dari server publik saat generate (butuh koneksi internet).</p>
+    <p>Berjalan sepenuhnya di browser — tidak ada data yang diunggah ke server mana pun.</p>
+    <p id="mapAttribution" class="hidden">Peta: © Esri, HERE, Garmin, USGS, OpenStreetMap contributors / Esri, Maxar, Earthstar Geographics — tile diambil langsung dari server publik (butuh internet).</p>
   </footer>
 
   <!-- coffee / QRIS modal -->
   <div id="coffeeModal" class="modal-overlay hidden">
     <div class="modal-box">
       <button class="modal-close" id="coffeeClose" type="button" aria-label="Tutup">×</button>
-      <h3>Traktir Kopi</h3>
-      <p class="hint">Kalau tool ini bermanfaat buat kerjaan kamu, boleh traktir kopi lewat QRIS di bawah. Terima kasih!</p>
+      <h3>Traktir kopi</h3>
+      <p class="hint">Kalau tool ini bermanfaat buat kerjaanmu, boleh traktir kopi lewat QRIS di bawah. Terima kasih!</p>
       <img id="coffeeQris" alt="QRIS Muhammad Afifani Romadhan" src="https://lh3.googleusercontent.com/d/133Ct_k-ql0PXklNLgQeWGLswIajbxKtg">
-      <p class="footer-made" style="margin-top:12px;">Muhammad Afifani Romadhan</p>
+      <p class="footer-made">Muhammad Afifani Romadhan</p>
     </div>
   </div>
 </div>
